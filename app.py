@@ -81,7 +81,7 @@ st.markdown("""
         margin-bottom: 14px;
     }
 
-    /* Executive KPI Cards (Replaces Code Tags) */
+    /* Executive KPI Cards */
     .kpi-card {
         background-color: #f1f5f9;
         border: 1px solid #cbd5e1;
@@ -121,7 +121,7 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* BULLETPROOF FIX FOR THE 60+ POPOVER BUTTON & TEXT CONTRAST */
+    /* FIX FOR 60+ POPOVER BUTTON & TEXT CONTRAST */
     div[data-testid="stPopover"] button,
     div[data-testid="stPopover"] button:hover,
     div[data-testid="stPopover"] button:focus,
@@ -354,7 +354,7 @@ wind_ms = float(scenario_row[epwWindSpeedCol])
 tair_k = tair_c + 273.15
 
 
-# --- SECTION 3: Peak Regional Climate Benchmarks (Clean KPI Cards) ---
+# --- SECTION 3: Peak Regional Climate Benchmarks ---
 st.markdown("""
 <div class="card-container">
     <div class="section-header">Peak Climate Benchmarks</div>
@@ -428,7 +428,7 @@ mat2_name = m3_col1.text_input("Name 3", value=st.session_state["slot_2_name"], 
 mat2_eps = m3_col2.text_input("Eps 3", value=st.session_state["slot_2_eps"], label_visibility="collapsed")
 mat2_alp = m3_col3.text_input("Alp 3", value=st.session_state["slot_2_alp"], label_visibility="collapsed")
 
-# Search Database Popover (High Contrast Explicit Styling)
+# Search Database Popover
 with st.popover("🔍 Search & Filter 60+ Literature Material Database (University, Chemical, Alpha, Epsilon)", use_container_width=True):
     st.markdown("<h4 style='color:#0f172a !important;'>Global Radiative Cooling Material Library</h4>", unsafe_allow_html=True)
     
@@ -471,7 +471,7 @@ with st.popover("🔍 Search & Filter 60+ Literature Material Database (Universi
             st.rerun()
 
 
-# --- SECTION 5: Computed Equilibrium Results Output (High Contrast Custom HTML Table) ---
+# --- SECTION 5: Computed Equilibrium Results Output ---
 st.markdown("""
 <div class="card-container">
     <div class="section-header">Computed Equilibrium Temperature Results</div>
@@ -479,42 +479,29 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if st.session_state["results_data"]:
-    # Custom HTML Table for 100% Reliable Visual Rendering across themes
-    table_html = """
-    <table style="width:100%; border-collapse: collapse; font-family: sans-serif; font-size: 13.5px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden;">
-        <thead>
-            <tr style="background-color: #0f172a; color: #ffffff; text-align: left; font-weight: bold;">
-                <th style="padding: 10px 14px;">Material Configuration</th>
-                <th style="padding: 10px 14px; text-align: center;">Emissivity (ε)</th>
-                <th style="padding: 10px 14px; text-align: center;">Absorptivity (α)</th>
-                <th style="padding: 10px 14px; text-align: center;">Equilibrium Temp</th>
-                <th style="padding: 10px 14px; text-align: center;">Thermal Delta</th>
-                <th style="padding: 10px 14px;">Performance Status</th>
-            </tr>
-        </thead>
-        <tbody>
-    """
+    # Building HTML table without leading line indentation to avoid markdown code-block escaping
+    table_html = (
+        '<table style="width:100%; border-collapse: collapse; font-family: sans-serif; font-size: 13.5px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden;">'
+        '<thead>'
+        '<tr style="background-color: #0f172a; color: #ffffff; text-align: left; font-weight: bold;">'
+        '<th style="padding: 10px 14px;">Material Configuration</th>'
+        '<th style="padding: 10px 14px; text-align: center;">Emissivity (ε)</th>'
+        '<th style="padding: 10px 14px; text-align: center;">Absorptivity (α)</th>'
+        '<th style="padding: 10px 14px; text-align: center;">Equilibrium Temp</th>'
+        '<th style="padding: 10px 14px; text-align: center;">Thermal Delta</th>'
+        '<th style="padding: 10px 14px;">Performance Status</th>'
+        '</tr>'
+        '</thead>'
+        '<tbody>'
+    )
     
     for idx, row in enumerate(st.session_state["results_data"]):
         bg_color = "#ffffff" if idx % 2 == 0 else "#f8fafc"
-        badge_color = "#dcfce7; color: #15803d" if row["is_cooling"] else "#fee2e2; color: #b91c1c"
+        badge_style = "background-color: #dcfce7; color: #15803d;" if row["is_cooling"] else "background-color: #fee2e2; color: #b91c1c;"
         
-        table_html += f"""
-            <tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0; color: #0f172a;">
-                <td style="padding: 10px 14px; font-weight: 600;">{row['name']}</td>
-                <td style="padding: 10px 14px; text-align: center;">{row['eps']:.3f}</td>
-                <td style="padding: 10px 14px; text-align: center;">{row['alp']:.3f}</td>
-                <td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row['eq_c']:.2f} °C</td>
-                <td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row['delta']:+.2f} °C</td>
-                <td style="padding: 10px 14px;">
-                    <span style="background-color: {badge_color}; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">
-                        {row['status']}
-                    </span>
-                </td>
-            </tr>
-        """
+        table_html += f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0; color: #0f172a;"><td style="padding: 10px 14px; font-weight: 600;">{row["name"]}</td><td style="padding: 10px 14px; text-align: center;">{row["eps"]:.3f}</td><td style="padding: 10px 14px; text-align: center;">{row["alp"]:.3f}</td><td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["eq_c"]:.2f} °C</td><td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["delta"]:+.2f} °C</td><td style="padding: 10px 14px;"><span style="{badge_style} padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">{row["status"]}</span></td></tr>'
         
-    table_html += "</tbody></table>"
+    table_html += '</tbody></table>'
     st.markdown(table_html, unsafe_allow_html=True)
 else:
     st.info("Select a city, set up your materials, and click 'Run Equilibrium Calculation' below.")
@@ -538,7 +525,7 @@ def get_current_materials():
         st.error(f"Input Validation Error: Please enter valid numeric values for Emissivity and Absorptivity.\n{err}")
         return None
 
-# Action 1: Calculation (Populates Interactive Table)
+# Action 1: Calculation
 if btn_col1.button("Run Equilibrium Calculation"):
     mats = get_current_materials()
     if mats:
