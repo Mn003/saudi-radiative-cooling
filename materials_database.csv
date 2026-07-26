@@ -1,0 +1,61 @@
+Name,Chemical_Formula,Category,Alpha,Epsilon,Thickness_or_Spec,University_or_Institution,Reference
+Purdue BaSO4 Super-White Paint,BaSO4 (Barium Sulfate),Paints & Coatings,0.019,0.950,400 µm,Purdue University,Li et al. (ACS Appl. Mater. 2021)
+Purdue CaCO3 Radiative Paint,CaCO3 (Calcium Carbonate),Paints & Coatings,0.045,0.955,400 µm,Purdue University,Li et al. (Cell Rep. Phys. Sci. 2020)
+Al2O3 Nanoparticle Acrylic Paint,Al2O3 (Aluminum Oxide),Paints & Coatings,0.060,0.920,300 µm,Purdue University,Huang & Ruan (Int. J. Heat Mass 2017)
+ZnO Nanoparticle Acrylic Paint,ZnO (Zinc Oxide),Paints & Coatings,0.080,0.910,250 µm,University of Florida,Atiganyanun et al. (ACS Photonics 2018)
+SiO2 Particle Silicon Paint,SiO2 (Silicon Dioxide),Paints & Coatings,0.050,0.930,350 µm,KAIST,Chae et al. (ACS Appl. Mater. 2020)
+BN (Boron Nitride) Nanosheet Paint,BN (Boron Nitride),Paints & Coatings,0.025,0.960,200 µm,Zhejiang University,Li et al. (Energy Environ. Sci. 2020)
+Modified TiO2 Silica-Coated Paint,TiO2 / SiO2,Paints & Coatings,0.110,0.900,300 µm,University of Tehran,Zeyghami et al. (Solar Energy 2018)
+Standard Commercial TiO2 White Exterior Paint,TiO2 (Titanium Dioxide),Paints & Coatings,0.200,0.880,150 µm,Commercial Benchmark,Commercial Benchmark Control
+Commercial Acrylic White Paint,PMMA / TiO2,Paints & Coatings,0.180,0.890,200 µm,Commercial Benchmark,Commercial Benchmark Control
+K2SO4 White Radiative Paint,K2SO4 (Potassium Sulfate),Paints & Coatings,0.035,0.940,300 µm,USTC,Pei et al. (Solar Energy Mat. 2021)
+MgCO3 Particle Cooling Paint,MgCO3 (Magnesium Carbonate),Paints & Coatings,0.040,0.945,350 µm,Korea University,Son et al. (Adv. Opt. Mater. 2021)
+CaSO4 Gypsum-Based Paint,CaSO4 (Calcium Sulfate),Paints & Coatings,0.055,0.930,400 µm,University of Florida,Atiganyanun et al. (Solar Energy 2020)
+Columbia Porous P(VdF-HFP) Polymer Film,P(VdF-HFP),Polymers & Structural Films,0.040,0.960,300 µm,Columbia University,Mandal et al. (Science 2018)
+Porous PTFE (Teflon) Membrane,C2F4 (Polytetrafluoroethylene),Polymers & Structural Films,0.020,0.940,150 µm,UTS Sydney,Gentle & Smith (Nano Lett. 2010)
+PDMS Coating on Silver Substrate,C2H6OSi (PDMS) / Ag,Polymers & Structural Films,0.020,0.950,100 µm,Boston University,Kou et al. (ACS Photonics 2017)
+Hierarchical Porous TPU (Polyurethane) Film,Thermoplastic Polyurethane,Polymers & Structural Films,0.035,0.950,250 µm,Sichuan University,Xu et al. (ACS Nano 2021)
+Hierarchical Porous PE (Polyethylene) Film,C2H4 (Polyethylene),Polymers & Structural Films,0.030,0.920,200 µm,Nanjing University,Shao et al. (Adv. Funct. Mater. 2021)
+Porous PMMA Film on Aluminum,C5O2H8 (PMMA) / Al,Polymers & Structural Films,0.045,0.935,180 µm,Huazhong Univ Sci & Tech,Lu et al. (Nano Energy 2019)
+Porous PVDF Polymer Coating,PVDF (Polyvinylidene Fluoride),Polymers & Structural Films,0.050,0.940,200 µm,Harbin Inst of Tech,Song et al. (Chem. Eng. J. 2021)
+PMMA Microsphere in PDMS Matrix,PMMA / PDMS,Polymers & Structural Films,0.030,0.940,300 µm,Tsinghua University,Chen et al. (ACS Appl. Mater. 2020)
+Electrospun PVDF-HFP/SiO2 Nanofiber Mesh,PVDF-HFP / SiO2,Polymers & Structural Films,0.028,0.955,220 µm,Donghua University,Wang et al. (ACS Nano 2020)
+Stanford HfO2/SiO2 Photonic Cooler,HfO2 / SiO2 / Ag,Metamaterials & Photonic Crystals,0.030,0.960,1.8 µm 7-layer on Ag,Stanford University,Raman et al. (Nature 2014)
+Colorado Glass-Polymer Metamaterial (SiO2/TPX),SiO2 / TPX (PMP Polymer),Metamaterials & Photonic Crystals,0.040,0.930,50 µm film,UC Boulder,Zhai et al. (Science 2017)
+Ag/SiO2/Si3N4 Multilayer Emitter,Ag / SiO2 / Si3N4,Metamaterials & Photonic Crystals,0.025,0.970,1.2 µm on Ag,SEU China,Zhao et al. (Nano Energy 2019)
+SiN/SiO2 Micro-Cavity Photonic Crystal,Si3N4 / SiO2,Metamaterials & Photonic Crystals,0.035,0.950,Photonic Crystal,Monash University,Hossain et al. (Adv. Opt. Mater. 2015)
+Al2O3/SiO2 1D Photonic Bandgap Emitter,Al2O3 / SiO2,Metamaterials & Photonic Crystals,0.020,0.965,9-layer Stack,Marmara University,Kecebas et al. (Biosensors 2017)
+Ag-PDMS Metasurface Grating Emitter,Ag / PDMS Metasurface,Metamaterials & Photonic Crystals,0.022,0.960,Metasurface,Harbin Inst of Tech,Sun et al. (Optics Express 2018)
+Si-SiO2 Nanopillar Metasurface,Si / SiO2,Metamaterials & Photonic Crystals,0.045,0.940,Nanopillar Array,Nanyang Tech Univ,Zeng et al. (ACS Nano 2018)
+Maryland Delignified Cooling Wood,Cellulose / Lignin-free Wood,Wood & Bio-Aerogels,0.040,0.920,Structure-engineered wood,University of Maryland,Li et al. (Science 2019)
+Cellulose Nanofiber (CNF) Aerogel,(C6H10O5)n Nanofiber,Wood & Bio-Aerogels,0.030,0.920,Scalable Aerogel,University of Maryland,Mi et al. (Adv. Mater. 2020)
+Silica Aerogel Monolith Emitter,SiO2 Aerogel,Wood & Bio-Aerogels,0.030,0.900,10 mm monolith,MIT,Leroy et al. (Nature Energy 2019)
+Chitosan-Based Bio-Polymer Aerogel,Chitosan Biopolymer,Wood & Bio-Aerogels,0.045,0.930,Freeze-dried mesh,Wuhan University,Wang et al. (Adv. Funct. Mater. 2021)
+Bamboo-Derived Nanocellulose Emitter,Bamboo Nanocellulose,Wood & Bio-Aerogels,0.038,0.925,Bio-derived film,Central South Univ,Chen et al. (ACS Nano 2021)
+Fluorescent Yellow Dye Radiative Emitter,P(VdF-HFP) / Dye,Colored Radiative Coolers,0.120,0.940,Yellow Coating,Nanjing University,He et al. (Nat. Commun. 2021)
+Structural Blue Bilayer Radiative Cooler,TiO2 / SiO2 Photonic,Colored Radiative Coolers,0.150,0.930,Blue Coating,Fudan University,Zeng et al. (Nat. Commun. 2021)
+Structural Red Dye-Doped PDRC Emitter,P(VdF-HFP) / Red Dye,Colored Radiative Coolers,0.180,0.920,Red Coating,SJTU China,Chen et al. (Nano Lett. 2021)
+Structural Green Photonic Crystal Emitter,SiO2 / Polymer Photonic,Colored Radiative Coolers,0.160,0.935,Green Coating,Univ of Naples,Catapei et al. (Adv. Sci. 2022)
+Black Dye-Free Structural Emitter,Carbon / Porous Polymer,Colored Radiative Coolers,0.220,0.910,Dark Grey Coating,CAS Ningbo,Zhang et al. (ACS Nano 2021)
+Polished Silver Mirror (Substrate Reflector),Ag (Pure Silver),Substrates & Controls,0.030,0.030,Bare Metal,Substrate Benchmark,Substrate Benchmark Control
+Polished Aluminum Metal (Substrate Reflector),Al (Pure Aluminum),Substrates & Controls,0.150,0.050,Bare Metal,Substrate Benchmark,Substrate Benchmark Control
+Polished Gold Mirror (Substrate Reflector),Au (Pure Gold),Substrates & Controls,0.020,0.020,Bare Metal,Substrate Benchmark,Substrate Benchmark Control
+Matt Black Acrylic Paint (Absorber Control),Carbon Black / Acrylic,Substrates & Controls,0.950,0.950,100 µm,Absorber Benchmark,Substrate Benchmark Control
+Clear Soda-Lime Float Glass (Control),SiO2 / Na2O / CaO,Substrates & Controls,0.120,0.890,3 mm,Building Glass,Building Glass Control
+Uncoated Bare Silicon Wafer (Control),Si (Pure Silicon),Substrates & Controls,0.300,0.680,500 µm,Semiconductor Substrate,Semiconductor Benchmark Control
+Bare Copper Plate (Control),Cu (Pure Copper),Substrates & Controls,0.250,0.040,Bare Metal,Substrate Benchmark,Substrate Benchmark Control
+Al2O3 Ceramic Substrate Plate,Al2O3 Ceramic,Substrates & Controls,0.100,0.900,1 mm Ceramic,Pure Ceramic Substrate,Substrate Benchmark Control
+SiC (Silicon Carbide) Wafer Emitter,SiC (Silicon Carbide),Selective Infrared Emitters,0.200,0.980,Reststrahlen Band,MIT,Catalanotti et al. (Solar Energy 1975)
+Quartz (SiO2) Crystal Plate,SiO2 Quartz Crystal,Selective Infrared Emitters,0.060,0.930,1 mm Crystal,Chalmers University,Granqvist et al. (Appl. Phys. Lett. 1981)
+SiN (Silicon Nitride) Thin Film,Si3N4,Selective Infrared Emitters,0.080,0.950,500 nm on Ag,University of Bath,Harrison & Walton (Solar Energy 1978)
+Ge-SiO2 Dual-Band Selective Emitter,Ge / SiO2 Stack,Selective Infrared Emitters,0.040,0.960,Thin Film Stack,LBL Berkeley,Berdahl et al. (Solar Energy 1983)
+TiO2-SiO2 Double-Layer Film,TiO2 / SiO2,Selective Infrared Emitters,0.070,0.920,200 nm / 400 nm,Uppsala University,Niklasson et al. (Solar Energy 1984)
+V2O5 Thermochromic Radiative Emitter,V2O5 (Vanadium Pentoxide),Smart & Adaptive Emitters,0.150,0.850,Phase-Change Material,UC Berkeley,Tang et al. (Science 2021)
+VO2 Temperature-Adaptive Photonic Structure,VO2 (Vanadium Dioxide),Smart & Adaptive Emitters,0.120,0.900,High Temp State (25°C+),UC Berkeley,Taylor et al. (Opt. Mater. Express 2017)
+Perovskite Electrochromic Radiative Coating,Halide Perovskite,Smart & Adaptive Emitters,0.100,0.880,Switched Cooling State,Stanford University,Wang et al. (Nat. Commun. 2021)
+PVDF-HFP / BaSO4 Hybrid Coating,PVDF-HFP / BaSO4,Hybrid Nanocomposites,0.022,0.960,300 µm,Purdue University,Li et al. (Adv. Mater. 2021)
+PDMS / CaCO3 Flexible Composite,PDMS / CaCO3,Hybrid Nanocomposites,0.040,0.950,400 µm,Zhejiang University,Zhou et al. (Solar Energy Mat. 2021)
+PMMA / BNNT Nanocomposite Film,PMMA / BNNT,Hybrid Nanocomposites,0.025,0.955,200 µm,Tsinghua University,Zhu et al. (ACS Appl. Mater. 2020)
+PU / Al2O3 Waterproof Radiative Coating,Polyurethane / Al2O3,Hybrid Nanocomposites,0.055,0.930,350 µm,Tianjin University,Guo et al. (Prog. Org. Coat. 2021)
+Silicone / SiO2 Flexible Rubber Sheet,Silicone Rubber / SiO2,Hybrid Nanocomposites,0.040,0.940,1 mm Sheet,USTC,Feng et al. (Opt. Mater. 2020)
+Epoxy / BaSO4 Heavy-Duty Coating,Epoxy Resin / BaSO4,Hybrid Nanocomposites,0.030,0.945,500 µm,Seoul National Univ,Kim et al. (Coatings 2021)
