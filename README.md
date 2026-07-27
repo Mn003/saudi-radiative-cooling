@@ -5,8 +5,7 @@ An engineering workstation and web-based simulation engine for modeling sub-ambi
 ---
 
 ## 🌐 Live Web Application
-Access the deployed interactive simulator here:  
-👉 **[Click Here to Launch Live Website]([[https://saudi-radiative-cooling-aefttvn5kmgbjvrhyblppm.streamlit.app]])**
+👉 **<a href="https://streamlit.app" target="_blank">Click Here to Launch Live Website</a>**
 
 ---
 
