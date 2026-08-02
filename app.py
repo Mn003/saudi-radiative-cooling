@@ -10,9 +10,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # ==========================================
-# DIRECT IMPORT FROM PHYSICS ENGINE (prc.py)
+# DIRECT IMPORT FROM PHYSICS ENGINE (PRC.py)
 # ==========================================
-from prc import (
+from PRC import (
     epwDryBulbTempCol,
     epwRelHumidityCol,
     epwGhiCol,
