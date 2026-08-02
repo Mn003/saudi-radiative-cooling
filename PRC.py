@@ -55,9 +55,9 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
     """
     Computes dynamic convective heat transfer coefficient (h_c) using flat-plate 
     boundary layer fluid dynamics and Tsilingiris moist-air transport properties.
-    Uses Incropera & DeWitt standard flat-plate correlations:
-    - Pure Laminar (Re_L <= 5e5): Nu_L = 0.664 * Re_L^0.5 * Pr^(1/3)
-    - Mixed Boundary Layer (Re_L > 5e5): Nu_L = (0.037 * Re_L^0.8 - 871.3) * Pr^(1/3)
+    Uses a Logistic Intermittency Transition Factor (gamma) to model the physical 
+    gradual laminar-to-turbulent transition zone around Re_crit = 5e5, establishing 
+    C^1 derivative continuity and eliminating artificial slope kinks.
     """
     natural_convection = 2.5
     if wind_speed <= 0.05:
@@ -73,11 +73,19 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
     prandtl_num = ((1005 + 1820 * humidity_ratio) * moist_viscosity) / moist_conductivity
     reynolds_num = (air_density * wind_speed * 1.0) / moist_viscosity
 
-    # Incropera & DeWitt Standard Flat-Plate Correlations (Eq. 7.38 & 7.41)
-    if reynolds_num <= 5e5:
-        forced_nusselt = 0.664 * (reynolds_num**0.5) * (prandtl_num**(1.0 / 3.0))
-    else:
-        forced_nusselt = (0.037 * (reynolds_num**0.8) - 871.3) * (prandtl_num**(1.0 / 3.0))
+    # Pure Laminar Regime Nusselt
+    nu_laminar = 0.664 * (reynolds_num**0.5) * (prandtl_num**(1.0 / 3.0))
+
+    # Mixed Boundary Layer Regime Nusselt
+    nu_turbulent = (0.037 * (reynolds_num**0.8) - 871.3) * (prandtl_num**(1.0 / 3.0))
+
+    # Logistic Intermittency Transition Factor (gamma)
+    # Models gradual physical boundary-layer transition around Re_crit = 5e5 with width 1e5
+    re_crit = 5e5
+    delta_re = 1e5
+    gamma = 1.0 / (1.0 + np.exp(-(reynolds_num - re_crit) / delta_re))
+
+    forced_nusselt = (1.0 - gamma) * nu_laminar + gamma * nu_turbulent
 
     return natural_convection + ((forced_nusselt * moist_conductivity) / 1.0)
 
