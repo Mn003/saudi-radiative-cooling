@@ -191,6 +191,8 @@ class MaterialLibraryDialog(tk.Toplevel):
 
         self.populate_table(filtered)
 
+#a, this is just to merge branches dont mind it
+    
     def reset_filters(self):
         """Resets all filter controls to show all 60 materials."""
         self.search_var.set("")
