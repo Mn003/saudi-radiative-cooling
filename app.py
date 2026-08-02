@@ -461,7 +461,7 @@ materials_mat = get_current_materials()
 if st.session_state["active_plot"] and materials_mat:
     st.divider()
     
-    # --- PLOT 1: DIURNAL PROFILE (SMOOTH CONTINUOUS CURVES) ---
+    # --- PLOT 1: DIURNAL PROFILE ---
     if st.session_state["active_plot"] == "diurnal":
         st.markdown(f"#### Diurnal Performance Profile - {current_city}")
         
@@ -472,7 +472,6 @@ if st.session_state["active_plot"] and materials_mat:
         
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.0, 5.2), dpi=100)
         
-        # Smooth continuous line plots without shape markers
         ax1.plot(hours, amb_temps, color='black', linestyle='--', lw=2.5, label='Ambient Air Temp Baseline')
         colors = ['#e63946', '#2a9d8f', '#457b9d']
         
@@ -490,7 +489,6 @@ if st.session_state["active_plot"] and materials_mat:
         ax1.legend(loc='upper left', fontsize='x-small')
         ax1.set_title("Equilibrium Thermal Response", fontsize=10, fontweight='bold')
 
-        # Smooth GHI curve
         ax2.plot(hours, day_df[epwGhiCol].values, color='#f39c12', lw=2.2, label='Solar GHI (W/m²)')
         ax2.set_xlabel('Hour of Day', fontweight='bold')
         ax2.set_ylabel('Solar Irradiance (GHI) [W/m²]', color='#f39c12', fontweight='bold')
@@ -513,7 +511,7 @@ if st.session_state["active_plot"] and materials_mat:
         fig.tight_layout()
         st.pyplot(fig)
 
-    # --- PLOT 2: DUAL-PANEL SENSITIVITY SWEEPS DASHBOARD (SMOOTH CONTINUOUS CURVES AT 100 RESOLUTION) ---
+    # --- PLOT 2: DUAL-PANEL SENSITIVITY SWEEPS DASHBOARD ---
     elif st.session_state["active_plot"] == "sensitivity":
         st.markdown("#### Parametric Sensitivity Dashboard")
         st.info(f"• Baseline Solar Irradiance (GHI): {ghi_wm2:.1f} W/m²   |   • Baseline Air Temperature: {tair_c:.2f}°C   |   • Boundary Relative Humidity: {rh_pct:.1f}%")
@@ -526,11 +524,11 @@ if st.session_state["active_plot"] and materials_mat:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 5.0), dpi=100)
 
         for i, mat in enumerate(materials_mat):
-            # Left Subplot: Smooth Continuous Solar Irradiance Load Sweep
+            # Left Subplot: Solar Irradiance Load Sweep
             ghi_results = [solve_equilibrium_temperature(tair_k, g, wind_ms, rh_pct, mat["eps"], mat["alp"]) for g in ghi_sweep]
             ax1.plot(ghi_sweep, ghi_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
-            # Right Subplot: Smooth Continuous Wind Speed Convection Sweep (Churchill Smooth Blending)
+            # Right Subplot: Wind Speed Convection Sweep (Incropera Standard Model)
             wind_results = [solve_equilibrium_temperature(tair_k, ghi_wm2, w, rh_pct, mat["eps"], mat["alp"]) for w in wind_sweep]
             ax2.plot(wind_sweep, wind_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
@@ -542,11 +540,11 @@ if st.session_state["active_plot"] and materials_mat:
         ax1.grid(True, linestyle=':', alpha=0.6)
         ax1.legend(loc='lower left', fontsize='small')
 
-        # Format Subplot 2 (Wind Speed Convection - Churchill Smooth Blending)
+        # Format Subplot 2 (Wind Speed Convection)
         ax2.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.2f}°C)")
         ax2.set_xlabel("Convective Wind Speed [m/s]", fontweight='bold')
         ax2.set_ylabel("Equilibrium Temperature (°C)", fontweight='bold')
-        ax2.set_title("Sensitivity vs. Wind Convection (Smooth Blending)", fontsize=10, fontweight='bold')
+        ax2.set_title("Sensitivity vs. Wind Convection", fontsize=10, fontweight='bold')
         ax2.grid(True, linestyle=':', alpha=0.6)
         ax2.legend(loc='lower left', fontsize='small')
 
