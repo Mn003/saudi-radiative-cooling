@@ -474,14 +474,14 @@ if st.session_state["active_plot"] and materials_mat:
         
         # Smooth continuous line plots without shape markers
         ax1.plot(hours, amb_temps, color='black', linestyle='--', lw=2.5, label='Ambient Air Temp Baseline')
-        colors, line_styles = ['#e63946', '#2a9d8f', '#457b9d'], ['-', '-', '-']
+        colors = ['#e63946', '#2a9d8f', '#457b9d']
         
         for i, mat in enumerate(materials_mat):
             sim_profile = [
                 solve_equilibrium_temperature(row[epwDryBulbTempCol] + 273.15, row[epwGhiCol], row[epwWindSpeedCol], row[epwRelHumidityCol], mat["eps"], mat["alp"])
                 for _, row in day_df.iterrows()
             ]
-            ax1.plot(hours, sim_profile, color=colors[i % 3], linestyle=line_styles[i % 3], lw=2.2, label=f"{mat['name']} (ε={mat['eps']}, α={mat['alp']})")
+            ax1.plot(hours, sim_profile, color=colors[i % 3], linestyle='-', lw=2.2, label=f"{mat['name']} (ε={mat['eps']}, α={mat['alp']})")
 
         ax1.set_xlabel('Hour of Day', fontweight='bold')
         ax1.set_ylabel('Steady State Temp (°C)', fontweight='bold')
@@ -521,18 +521,18 @@ if st.session_state["active_plot"] and materials_mat:
         # 100 evaluation points for high resolution smooth curves
         ghi_sweep = np.linspace(0.0, 1000.0, 100)
         wind_sweep = np.linspace(0.1, 12.0, 100)
-        colors, line_styles = ['#e63946', '#2a9d8f', '#457b9d'], ['-', '-', '-']
+        colors = ['#e63946', '#2a9d8f', '#457b9d']
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 5.0), dpi=100)
 
         for i, mat in enumerate(materials_mat):
             # Left Subplot: Smooth Continuous Solar Irradiance Load Sweep
             ghi_results = [solve_equilibrium_temperature(tair_k, g, wind_ms, rh_pct, mat["eps"], mat["alp"]) for g in ghi_sweep]
-            ax1.plot(ghi_sweep, ghi_results, color=colors[i % 3], linestyle=line_styles[i % 3], lw=2.2, label=mat["name"])
+            ax1.plot(ghi_sweep, ghi_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
-            # Right Subplot: Smooth Continuous Wind Speed Convection Sweep (Mixed Boundary Layer)
+            # Right Subplot: Smooth Continuous Wind Speed Convection Sweep (Churchill Smooth Blending)
             wind_results = [solve_equilibrium_temperature(tair_k, ghi_wm2, w, rh_pct, mat["eps"], mat["alp"]) for w in wind_sweep]
-            ax2.plot(wind_sweep, wind_results, color=colors[i % 3], linestyle=line_styles[i % 3], lw=2.2, label=mat["name"])
+            ax2.plot(wind_sweep, wind_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
         # Format Subplot 1 (GHI)
         ax1.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.2f}°C)")
@@ -542,11 +542,11 @@ if st.session_state["active_plot"] and materials_mat:
         ax1.grid(True, linestyle=':', alpha=0.6)
         ax1.legend(loc='lower left', fontsize='small')
 
-        # Format Subplot 2 (Wind Speed Convection - Smooth Continuous Mixed Flow)
+        # Format Subplot 2 (Wind Speed Convection - Churchill Smooth Blending)
         ax2.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.2f}°C)")
         ax2.set_xlabel("Convective Wind Speed [m/s]", fontweight='bold')
         ax2.set_ylabel("Equilibrium Temperature (°C)", fontweight='bold')
-        ax2.set_title("Sensitivity vs. Wind Convection (Mixed Flow)", fontsize=10, fontweight='bold')
+        ax2.set_title("Sensitivity vs. Wind Convection (Smooth Blending)", fontsize=10, fontweight='bold')
         ax2.grid(True, linestyle=':', alpha=0.6)
         ax2.legend(loc='lower left', fontsize='small')
 
