@@ -10,7 +10,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # ==========================================
-# DIRECT IMPORT FROM PURE PHYSICS MODULE (prc.py)
+# DIRECT IMPORT FROM PHYSICS ENGINE (prc.py)
 # ==========================================
 from prc import (
     epwDryBulbTempCol,
@@ -35,7 +35,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for High-Contrast, Professional Executive Design
+# Custom CSS for High-Contrast, Professional Design
 st.markdown("""
 <style>
     /* Main Background */
@@ -157,7 +157,7 @@ st.markdown("""
 
 
 # ==========================================
-# STREAMLIT CACHED WRAPPERS FOR FAST LOADING
+# STREAMLIT CACHED WRAPPERS
 # ==========================================
 @st.cache_data
 def get_cached_materials():
@@ -261,7 +261,7 @@ with kpi2:
     st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-label">Ambient Air Temp</div>
-        <div class="kpi-value">{tair_c:.1f} °C</div>
+        <div class="kpi-value">{tair_c:.2f} °C</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -269,7 +269,7 @@ with kpi3:
     st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-label">Wind Speed</div>
-        <div class="kpi-value">{wind_ms:.1f} m/s</div>
+        <div class="kpi-value">{wind_ms:.2f} m/s</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -365,7 +365,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if st.session_state["results_data"]:
-    # HTML Table rendered without leading line indentation to avoid markdown code-block escaping
     table_html = (
         '<table style="width:100%; border-collapse: collapse; font-family: sans-serif; font-size: 13.5px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden;">'
         '<thead>'
@@ -405,9 +404,9 @@ st.write("")
 
 
 # ==========================================
-# ACTION BUTTON BAR & SIMULATION HANDLERS
+# 3-BUTTON ACTION BAR & SIMULATION HANDLERS
 # ==========================================
-btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
+btn_col1, btn_col2, btn_col3 = st.columns(3)
 
 def get_current_materials():
     try:
@@ -449,13 +448,9 @@ if btn_col1.button("Run Equilibrium Calculation"):
 if btn_col2.button("Plot Diurnal Performance Profile"):
     st.session_state["active_plot"] = "diurnal"
 
-# Action 3: Sensitivity Sweeps Plot Trigger
+# Action 3: Sensitivity Sweeps Dashboard Plot Trigger (Dual Panel: GHI & Wind Sweeps)
 if btn_col3.button("Plot Sensitivity Sweeps"):
     st.session_state["active_plot"] = "sensitivity"
-
-# Action 4: Fixed Wind Sweep Plot Trigger
-if btn_col4.button("Plot Fixed-Context Wind Sweep"):
-    st.session_state["active_plot"] = "wind"
 
 
 # ==========================================
@@ -516,50 +511,43 @@ if st.session_state["active_plot"] and materials_mat:
         fig.tight_layout()
         st.pyplot(fig)
 
-    # --- PLOT 2: SENSITIVITY SWEEPS ---
+    # --- PLOT 2: DUAL-PANEL SENSITIVITY SWEEPS DASHBOARD (GHI & WIND SWEEPS AT 100 RESOLUTION) ---
     elif st.session_state["active_plot"] == "sensitivity":
-        st.markdown("#### Sensitivity Analysis Dashboard")
-        
-        ghi_sweep = np.linspace(0, 1000, 50)
-        wind_sweep = np.linspace(0.1, 12, 50)
+        st.markdown("#### Parametric Sensitivity Dashboard")
+        st.info(f"• Baseline Solar Irradiance (GHI): {ghi_wm2:.1f} W/m²   |   • Baseline Air Temperature: {tair_c:.2f}°C   |   • Boundary Relative Humidity: {rh_pct:.1f}%")
+
+        # 100 evaluation points for smooth curves
+        ghi_sweep = np.linspace(0.0, 1000.0, 100)
+        wind_sweep = np.linspace(0.1, 12.0, 100)
         colors, markers = ['#e63946', '#2a9d8f', '#457b9d'], ['o', 's', '^']
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 5), dpi=100)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 5.0), dpi=100)
 
         for i, mat in enumerate(materials_mat):
-            ax1.plot(ghi_sweep, [solve_equilibrium_temperature(tair_k, g, wind_ms, rh_pct, mat["eps"], mat["alp"]) for g in ghi_sweep], color=colors[i % 3], marker=markers[i % 3], markevery=5, lw=2, label=mat["name"])
-            ax2.plot(wind_sweep, [solve_equilibrium_temperature(tair_k, ghi_wm2, w, rh_pct, mat["eps"], mat["alp"]) for w in wind_sweep], color=colors[i % 3], marker=markers[i % 3], markevery=5, lw=2, label=mat["name"])
+            # Left Subplot: Solar Irradiance Load Sweep
+            ghi_results = [solve_equilibrium_temperature(tair_k, g, wind_ms, rh_pct, mat["eps"], mat["alp"]) for g in ghi_sweep]
+            ax1.plot(ghi_sweep, ghi_results, color=colors[i % 3], marker=markers[i % 3], markevery=10, lw=2, label=mat["name"])
 
-        for ax, x_label, title in [(ax1, "Solar Radiation Load (GHI) [W/m²]", "Sensitivity vs. Solar Irradiance Load"), (ax2, "Convective Wind Speed [m/s]", "Sensitivity vs. Wind Convection")]:
-            ax.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label="Ambient Baseline")
-            ax.set_xlabel(x_label, fontweight='bold')
-            ax.set_ylabel("Equilibrium Temperature (°C)", fontweight='bold')
-            ax.set_title(title, fontsize=10, fontweight='bold')
-            ax.grid(True, linestyle=':', alpha=0.6)
-            ax.legend(loc='lower left', fontsize='small')
+            # Right Subplot: Wind Speed Convection Sweep (Smooth Continuous Mixed Boundary Layer)
+            wind_results = [solve_equilibrium_temperature(tair_k, ghi_wm2, w, rh_pct, mat["eps"], mat["alp"]) for w in wind_sweep]
+            ax2.plot(wind_sweep, wind_results, color=colors[i % 3], marker=markers[i % 3], markevery=10, lw=2, label=mat["name"])
 
-        fig.suptitle(f"Parametric Sensitivity Dashboard ({tair_c:.1f}°C Ambient)", fontsize=11, fontweight='bold')
-        fig.tight_layout()
-        st.pyplot(fig)
+        # Format Subplot 1 (GHI)
+        ax1.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.2f}°C)")
+        ax1.set_xlabel("Solar Radiation Load (GHI) [W/m²]", fontweight='bold')
+        ax1.set_ylabel("Equilibrium Temperature (°C)", fontweight='bold')
+        ax1.set_title("Sensitivity vs. Solar Irradiance Load", fontsize=10, fontweight='bold')
+        ax1.grid(True, linestyle=':', alpha=0.6)
+        ax1.legend(loc='lower left', fontsize='small')
 
-    # --- PLOT 3: FIXED WIND SWEEP ---
-    elif st.session_state["active_plot"] == "wind":
-        st.markdown("#### Wind Speed Sensitivity")
-        
-        st.info(f"• Solar Irradiance (GHI): {ghi_wm2:.1f} W/m²   |   • Ambient Air Temperature: {tair_c:.1f}°C   |   • Boundary Relative Humidity: {rh_pct:.1f}%")
-        
-        fig, ax = plt.subplots(figsize=(7.5, 4.5), dpi=100)
-        wind_sweep = np.linspace(0.1, 12, 50)
-        colors, markers = ['#e63946', '#2a9d8f', '#457b9d'], ['o', 's', '^']
+        # Format Subplot 2 (Wind Speed Convection)
+        ax2.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.2f}°C)")
+        ax2.set_xlabel("Convective Wind Speed [m/s]", fontweight='bold')
+        ax2.set_ylabel("Equilibrium Temperature (°C)", fontweight='bold')
+        ax2.set_title("Sensitivity vs. Wind Convection (Mixed Flow)", fontsize=10, fontweight='bold')
+        ax2.grid(True, linestyle=':', alpha=0.6)
+        ax2.legend(loc='lower left', fontsize='small')
 
-        for i, mat in enumerate(materials_mat):
-            ax.plot(wind_sweep, [solve_equilibrium_temperature(tair_k, ghi_wm2, w, rh_pct, mat["eps"], mat["alp"]) for w in wind_sweep], color=colors[i % 3], marker=markers[i % 3], markevery=5, lw=2, label=mat["name"])
-
-        ax.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.1f}°C)")
-        ax.set_xlabel("Convective Wind Speed [m/s]", fontweight='bold')
-        ax.set_ylabel("Equilibrium Temperature (°C)", fontweight='bold')
-        ax.grid(True, linestyle=':', alpha=0.6)
-        ax.legend(loc='lower left', fontsize='small')
-
+        fig.suptitle(f"Parametric Sensitivity Dashboard ({current_city})", fontsize=11, fontweight='bold')
         fig.tight_layout()
         st.pyplot(fig)
