@@ -55,8 +55,8 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
     """
     Computes dynamic convective heat transfer coefficient (h_c) using flat-plate 
     boundary layer fluid dynamics and Tsilingiris moist-air transport properties.
-    Uses Incropera mixed-flow correlation (A = 871.3 for Re_crit = 5e5) to ensure 
-    mathematical C^0 continuity and eliminate non-physical step jumps.
+    Uses Churchill-Usagi smooth asymptotic blending [Nu = sqrt(Nu_lam^2 + Nu_turb^2)]
+    to eliminate slope kinks and provide a physically smooth, continuous curve.
     """
     natural_convection = 2.5
     if wind_speed <= 0.05:
@@ -72,12 +72,11 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
     prandtl_num = ((1005 + 1820 * humidity_ratio) * moist_viscosity) / moist_conductivity
     reynolds_num = (air_density * wind_speed * 1.0) / moist_viscosity
 
-    if reynolds_num < 5e5:
-        forced_nusselt = 0.664 * (reynolds_num**0.5) * (prandtl_num**(1.0 / 3.0))
-    else:
-        # Incropera Mixed Boundary Layer Correlation (A = 871.3)
-        # Guarantees exact continuity at Re = 5e5: 0.037*(5e5)^0.8 - 871.3 = 0.664*(5e5)^0.5 = 469.5
-        forced_nusselt = (0.037 * (reynolds_num**0.8) - 871.3) * (prandtl_num**(1.0 / 3.0))
+    # Churchill-Usagi Smooth Asymptotic Blending
+    # Eliminates slope kinks at critical Reynolds transitions for C-infinity smooth physical curves
+    nu_laminar = 0.664 * (reynolds_num**0.5) * (prandtl_num**(1.0 / 3.0))
+    nu_turbulent = 0.037 * (reynolds_num**0.8) * (prandtl_num**(1.0 / 3.0))
+    forced_nusselt = np.sqrt(nu_laminar**2 + nu_turbulent**2)
 
     return natural_convection + ((forced_nusselt * moist_conductivity) / 1.0)
 
