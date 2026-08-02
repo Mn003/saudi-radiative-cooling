@@ -10,9 +10,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # ==========================================
-# DIRECT IMPORT FROM PHYSICS ENGINE (PRC.py)
+# DIRECT IMPORT FROM PHYSICS ENGINE (prc.py)
 # ==========================================
-from PRC import (
+from prc import (
     epwDryBulbTempCol,
     epwRelHumidityCol,
     epwGhiCol,
@@ -528,7 +528,7 @@ if st.session_state["active_plot"] and materials_mat:
             ghi_results = [solve_equilibrium_temperature(tair_k, g, wind_ms, rh_pct, mat["eps"], mat["alp"]) for g in ghi_sweep]
             ax1.plot(ghi_sweep, ghi_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
-            # Right Subplot: Wind Speed Convection Sweep (Incropera Standard Model)
+            # Right Subplot: Wind Speed Convection Sweep (Logistic Intermittency Transition)
             wind_results = [solve_equilibrium_temperature(tair_k, ghi_wm2, w, rh_pct, mat["eps"], mat["alp"]) for w in wind_sweep]
             ax2.plot(wind_sweep, wind_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
@@ -540,7 +540,7 @@ if st.session_state["active_plot"] and materials_mat:
         ax1.grid(True, linestyle=':', alpha=0.6)
         ax1.legend(loc='lower left', fontsize='small')
 
-        # Format Subplot 2 (Wind Speed Convection)
+        # Format Subplot 2 (Wind Speed Convection - Logistic Smooth Blending)
         ax2.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.2f}°C)")
         ax2.set_xlabel("Convective Wind Speed [m/s]", fontweight='bold')
         ax2.set_ylabel("Equilibrium Temperature (°C)", fontweight='bold')
