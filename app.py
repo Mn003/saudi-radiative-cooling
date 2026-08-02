@@ -2,7 +2,6 @@ import os
 import csv
 import pandas as pd
 import numpy as np
-import scipy.optimize as opt
 
 # Web Framework & Plotting
 import streamlit as st
@@ -11,24 +10,24 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # ==========================================
-# DIRECT IMPORT FROM prc.py
+# DIRECT IMPORT FROM PURE PHYSICS MODULE (prc.py)
 # ==========================================
-try:
-    from prc import (
-        epwDryBulbTempCol, 
-        epwRelHumidityCol, 
-        epwGhiCol, 
-        epwWindSpeedCol
-    )
-except ImportError:
-    epwDryBulbTempCol = 6
-    epwRelHumidityCol = 8
-    epwGhiCol = 13
-    epwWindSpeedCol = 21
+from prc import (
+    epwDryBulbTempCol,
+    epwRelHumidityCol,
+    epwGhiCol,
+    epwWindSpeedCol,
+    city_profiles,
+    calculate_sky_emissivity,
+    calculate_convective_coefficient,
+    solve_equilibrium_temperature,
+    load_material_database,
+    load_epw_weather
+)
 
 
 # ==========================================
-# PAGE CONFIG & PROFESSIONAL STYLING
+# PAGE CONFIGURATION & STYLING
 # ==========================================
 st.set_page_config(
     page_title="Saudi Arabia Radiative Cooling Simulator",
@@ -36,7 +35,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for High-Contrast, Professional Design
+# Custom CSS for High-Contrast, Professional Executive Design
 st.markdown("""
 <style>
     /* Main Background */
@@ -121,7 +120,7 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* FIX FOR 60+ POPOVER BUTTON & TEXT CONTRAST */
+    /* Streamlit Popover Button Contrast Overrides */
     div[data-testid="stPopover"] button,
     div[data-testid="stPopover"] button:hover,
     div[data-testid="stPopover"] button:focus,
@@ -158,134 +157,21 @@ st.markdown("""
 
 
 # ==========================================
-# THERMAL PHYSICS CALCULATIONS (FROM prc.py)
-# ==========================================
-def calculate_sky_emissivity(temp_celsius, relative_humidity):
-    a, b = 17.27, 237.7
-    alpha = ((a * temp_celsius) / (b + temp_celsius)) + np.log(max(relative_humidity, 1e-3) / 100.0)
-    temp_dew = (b * alpha) / (a - alpha)
-    sky_emissivity = 0.741 + (0.0062 * temp_dew)
-    return float(np.clip(sky_emissivity, 0.70, 0.95))
-
-def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity):
-    natural_convection = 2.5
-    if wind_speed <= 0.05: 
-        return natural_convection
-        
-    temp_kelvin = temp_celsius + 273.15
-    sat_pressure = 610.78 * np.exp((17.27 * temp_celsius) / (temp_celsius + 237.3))
-    humidity_ratio = 0.622 * ((relative_humidity / 100.0) * sat_pressure) / (101325.0 - ((relative_humidity / 100.0) * sat_pressure))
-    air_density = 101325.0 / (287.05 * temp_kelvin * (1.0 + 0.608 * humidity_ratio))
-
-    moist_viscosity = (1.458e-6 * (temp_kelvin**1.5) / (temp_kelvin + 110.4)) * (1.0 + 0.23 * humidity_ratio)
-    moist_conductivity = (2.495e-3 * (temp_kelvin**1.5) / (temp_kelvin + 194.4)) * (1.0 + 0.45 * humidity_ratio)
-    prandtl_num = ((1005 + 1820 * humidity_ratio) * moist_viscosity) / moist_conductivity
-    reynolds_num = (air_density * wind_speed * 1.0) / moist_viscosity
-
-    if reynolds_num < 5e5:
-        forced_nusselt = 0.664 * (reynolds_num**0.5) * (prandtl_num**(1.0/3.0))
-    else:
-        forced_nusselt = 0.037 * (reynolds_num**0.8) * (prandtl_num**(1.0/3.0))
-
-    return natural_convection + ((forced_nusselt * moist_conductivity) / 1.0)
-
-def solve_equilibrium_temperature(temp_air_k, ghi_val, wind_speed, rel_hum, emissivity, absorptivity):
-    temp_air_c = temp_air_k - 273.15
-    convective_coef = calculate_convective_coefficient(wind_speed, temp_air_c, rel_hum)
-    sky_emissivity = calculate_sky_emissivity(temp_air_c, rel_hum)
-    stefan_boltzmann_const = 5.67e-8
-
-    heat_balance = lambda temp_k: (emissivity * stefan_boltzmann_const * (temp_k**4)) - (emissivity * sky_emissivity * stefan_boltzmann_const * (temp_air_k**4)) - (absorptivity * ghi_val) + (convective_coef * (temp_k - temp_air_k))
-    return float(opt.fsolve(heat_balance, x0=temp_air_k)[0] - 273.15)
-
-
-# ==========================================
-# DATABASE & WEATHER FILE LOADERS
+# STREAMLIT CACHED WRAPPERS FOR FAST LOADING
 # ==========================================
 @st.cache_data
-def load_material_database():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(base_dir, "materials_database.csv")
-    
-    if os.path.exists(csv_path):
-        try:
-            materials = []
-            with open(csv_path, "r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    materials.append({
-                        "name": row.get("Name", "Unknown"),
-                        "chemical": row.get("Chemical_Formula", "N/A"),
-                        "category": row.get("Category", "General"),
-                        "alpha": float(row.get("Alpha", 0.05)),
-                        "epsilon": float(row.get("Epsilon", 0.90)),
-                        "spec": row.get("Thickness_or_Spec", "N/A"),
-                        "university": row.get("University_or_Institution", "N/A"),
-                        "reference": row.get("Reference", "N/A")
-                    })
-            if materials:
-                return materials
-        except Exception:
-            pass
-
-    # Embedded Fallback
-    return [
-        {"name": "Purdue BaSO4 Super-White Paint", "chemical": "BaSO4 (Barium Sulfate)", "category": "Paints & Coatings", "alpha": 0.019, "epsilon": 0.950, "spec": "400 µm", "university": "Purdue University", "reference": "Li et al. (ACS Appl. Mater. 2021)"},
-        {"name": "Purdue CaCO3 Radiative Paint", "chemical": "CaCO3 (Calcium Carbonate)", "category": "Paints & Coatings", "alpha": 0.045, "epsilon": 0.955, "spec": "400 µm", "university": "Purdue University", "reference": "Li et al. (Cell Rep. Phys. Sci. 2020)"},
-        {"name": "Stanford HfO2/SiO2 Photonic Cooler", "chemical": "HfO2 / SiO2 / Ag", "category": "Metamaterials & Photonic", "alpha": 0.030, "epsilon": 0.960, "spec": "1.8 µm", "university": "Stanford University", "reference": "Raman et al. (Nature 2014)"},
-        {"name": "Columbia Porous P(VdF-HFP) Film", "chemical": "P(VdF-HFP)", "category": "Polymers & Structural Films", "alpha": 0.040, "epsilon": 0.960, "spec": "300 µm", "university": "Columbia University", "reference": "Mandal et al. (Science 2018)"},
-        {"name": "Maryland Delignified Cooling Wood", "chemical": "Cellulose / Wood", "category": "Wood & Bio-Aerogels", "alpha": 0.040, "epsilon": 0.920, "spec": "Engineered", "university": "University of Maryland", "reference": "Li et al. (Science 2019)"},
-        {"name": "Standard Commercial TiO2 Paint", "chemical": "TiO2 (Titanium Dioxide)", "category": "Paints & Coatings", "alpha": 0.200, "epsilon": 0.880, "spec": "150 µm", "university": "Commercial Benchmark", "reference": "Commercial Control"}
-    ]
-
-materials_db = load_material_database()
-
-city_profiles = {
-    "Dhahran (Eastern Province)": {
-        "file": "SAU_SH_Dhahran-Abdulaziz.AB.404160_TMYx.2011-2025.epw",
-        "specialty": "Arabian Gulf Coastal-Desert: Subject to extreme summer humidity spikes (often >90% RH) and intense solar loads."
-    },
-    "Jeddah (Red Sea Coast)": {
-        "file": "SAU_MK_Jeddah-Abdulaziz.Intl.AP.410240_TMYx.2011-2025.epw",
-        "specialty": "Red Sea Coastal Climate: High year-round mean relative humidity (~55–65%) with narrow diurnal temperature ranges."
-    },
-    "Tabuk / Wajh (Western Coast & Northern Region)": {
-        "file": "SAU_TB_Wajh.AP.404000_TMYx.2007-2021.epw",
-        "specialty": "Red Sea North-Western Coastline: Persistent coastal winds and maritime air masses."
-    },
-    "Al Baha / Aqiq (High Elevation)": {
-        "file": "SAU_BA_Aqiq-Abdulaziz.AP.410550_TMYx.2011-2025.epw",
-        "specialty": "Sarawat Mountain Elevation (~1,700m+): Lower air density, reduced water vapor column, maximum atmospheric transmittance."
-    }
-}
+def get_cached_materials():
+    return load_material_database()
 
 @st.cache_data
-def load_epw_weather(city_name):
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(base_dir, "epw_files", city_profiles[city_name]["file"])
-    
-    if os.path.exists(file_path):
-        try:
-            df = pd.read_csv(file_path, skiprows=8, header=None)
-            cols = [epwDryBulbTempCol, epwRelHumidityCol, epwGhiCol, epwWindSpeedCol]
-            for c in cols:
-                df[c] = pd.to_numeric(df[c], errors='coerce')
-            df = df.dropna(subset=cols)
-            return df
-        except Exception:
-            pass
+def get_cached_weather(city_name):
+    return load_epw_weather(city_name)
 
-    # Synthetic fallback profile
-    hours = np.arange(8760)
-    synthetic_temp = 35 + 8 * np.sin(2 * np.pi * hours / 24)
-    synthetic_rh = 50 + 20 * np.cos(2 * np.pi * hours / 24)
-    synthetic_ghi = np.maximum(0, 950 * np.sin(np.pi * (hours % 24 - 6) / 12))
-    synthetic_wind = 3.5 + 1.0 * np.sin(2 * np.pi * hours / 12)
-    return pd.DataFrame({epwDryBulbTempCol: synthetic_temp, epwRelHumidityCol: synthetic_rh, epwGhiCol: synthetic_ghi, epwWindSpeedCol: synthetic_wind})
+materials_db = get_cached_materials()
 
 
 # ==========================================
-# INITIAL STATE MANAGEMENT
+# INITIAL SESSION STATE MANAGEMENT
 # ==========================================
 if "slot_0_name" not in st.session_state:
     st.session_state["slot_0_name"] = "Standard Commercial TiO2 Paint [TiO2 (Titanium Dioxide)]"
@@ -310,7 +196,7 @@ if "active_plot" not in st.session_state:
 
 
 # ==========================================
-# HEADER SECTION
+# APPLICATION HEADER
 # ==========================================
 st.markdown('<div class="app-header-title">Saudi Arabia Radiative Cooling Simulator</div>', unsafe_allow_html=True)
 st.markdown('<div class="app-header-subtitle">Passive Daytime Radiative Cooling (PDRC) Thermal Workstation</div>', unsafe_allow_html=True)
@@ -330,7 +216,7 @@ with f1_col1:
 city_info = city_profiles[current_city]
 st.markdown(f"<p style='color: #475569; font-size: 12.5px; font-style: italic; margin-top: -10px; margin-bottom: 15px;'>{city_info['specialty']}</p>", unsafe_allow_html=True)
 
-weather_df = load_epw_weather(current_city)
+weather_df = get_cached_weather(current_city)
 climate_scenarios = {
     "Absolute Hottest Day": weather_df[epwDryBulbTempCol].idxmax(),
     "Maximum Solar Peak Day": weather_df[epwGhiCol].idxmax()
@@ -410,25 +296,25 @@ hdr_col1.markdown("**Material / Surface Label Selection**")
 hdr_col2.markdown("<div style='text-align: center;'><b>Emissivity (ε)</b></div>", unsafe_allow_html=True)
 hdr_col3.markdown("<div style='text-align: center;'><b>Absorptivity (α)</b></div>", unsafe_allow_html=True)
 
-# Row 1
+# Row 1 Slot
 m1_col1, m1_col2, m1_col3 = st.columns([3, 1, 1])
 mat0_name = m1_col1.text_input("Name 1", value=st.session_state["slot_0_name"], label_visibility="collapsed")
 mat0_eps = m1_col2.text_input("Eps 1", value=st.session_state["slot_0_eps"], label_visibility="collapsed")
 mat0_alp = m1_col3.text_input("Alp 1", value=st.session_state["slot_0_alp"], label_visibility="collapsed")
 
-# Row 2
+# Row 2 Slot
 m2_col1, m2_col2, m2_col3 = st.columns([3, 1, 1])
 mat1_name = m2_col1.text_input("Name 2", value=st.session_state["slot_1_name"], label_visibility="collapsed")
 mat1_eps = m2_col2.text_input("Eps 2", value=st.session_state["slot_1_eps"], label_visibility="collapsed")
 mat1_alp = m2_col3.text_input("Alp 2", value=st.session_state["slot_1_alp"], label_visibility="collapsed")
 
-# Row 3
+# Row 3 Slot
 m3_col1, m3_col2, m3_col3 = st.columns([3, 1, 1])
 mat2_name = m3_col1.text_input("Name 3", value=st.session_state["slot_2_name"], label_visibility="collapsed")
 mat2_eps = m3_col2.text_input("Eps 3", value=st.session_state["slot_2_eps"], label_visibility="collapsed")
 mat2_alp = m3_col3.text_input("Alp 3", value=st.session_state["slot_2_alp"], label_visibility="collapsed")
 
-# Search Database Popover
+# 60+ Literature Material Database Popover Dialog
 with st.popover("🔍 Search & Filter 60+ Literature Material Database (University, Chemical, Alpha, Epsilon)", use_container_width=True):
     st.markdown("<h4 style='color:#0f172a !important;'>Global Radiative Cooling Material Library</h4>", unsafe_allow_html=True)
     
@@ -442,7 +328,7 @@ with st.popover("🔍 Search & Filter 60+ Literature Material Database (Universi
     a_min, a_max = p_col3.slider("Absorptivity (α) Range:", 0.0, 1.0, (0.0, 1.0), step=0.01)
     e_min, e_max = p_col4.slider("Emissivity (ε) Range:", 0.0, 1.0, (0.0, 1.0), step=0.01)
 
-    # Filter Data
+    # Multi-parametric Filtering
     filtered_mats = []
     for m in materials_db:
         u_match = (selected_univ == "All Institutions") or (m["university"] == selected_univ)
@@ -479,7 +365,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if st.session_state["results_data"]:
-    # Building HTML table without leading line indentation to avoid markdown code-block escaping
+    # HTML Table rendered without leading line indentation to avoid markdown code-block escaping
     table_html = (
         '<table style="width:100%; border-collapse: collapse; font-family: sans-serif; font-size: 13.5px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden;">'
         '<thead>'
@@ -499,7 +385,16 @@ if st.session_state["results_data"]:
         bg_color = "#ffffff" if idx % 2 == 0 else "#f8fafc"
         badge_style = "background-color: #dcfce7; color: #15803d;" if row["is_cooling"] else "background-color: #fee2e2; color: #b91c1c;"
         
-        table_html += f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0; color: #0f172a;"><td style="padding: 10px 14px; font-weight: 600;">{row["name"]}</td><td style="padding: 10px 14px; text-align: center;">{row["eps"]:.3f}</td><td style="padding: 10px 14px; text-align: center;">{row["alp"]:.3f}</td><td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["eq_c"]:.2f} °C</td><td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["delta"]:+.2f} °C</td><td style="padding: 10px 14px;"><span style="{badge_style} padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">{row["status"]}</span></td></tr>'
+        table_html += (
+            f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0; color: #0f172a;">'
+            f'<td style="padding: 10px 14px; font-weight: 600;">{row["name"]}</td>'
+            f'<td style="padding: 10px 14px; text-align: center;">{row["eps"]:.3f}</td>'
+            f'<td style="padding: 10px 14px; text-align: center;">{row["alp"]:.3f}</td>'
+            f'<td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["eq_c"]:.2f} °C</td>'
+            f'<td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["delta"]:+.2f} °C</td>'
+            f'<td style="padding: 10px 14px;"><span style="{badge_style} padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">{row["status"]}</span></td>'
+            f'</tr>'
+        )
         
     table_html += '</tbody></table>'
     st.markdown(table_html, unsafe_allow_html=True)
@@ -510,7 +405,7 @@ st.write("")
 
 
 # ==========================================
-# BOTTOM ACTION BUTTON BAR & LOGIC
+# ACTION BUTTON BAR & SIMULATION HANDLERS
 # ==========================================
 btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
 
@@ -550,21 +445,21 @@ if btn_col1.button("Run Equilibrium Calculation"):
         st.session_state["active_plot"] = None
         st.rerun()
 
-# Action 2: Diurnal Plot
+# Action 2: Diurnal Profile Plot Trigger
 if btn_col2.button("Plot Diurnal Performance Profile"):
     st.session_state["active_plot"] = "diurnal"
 
-# Action 3: Sensitivity Sweeps Plot
+# Action 3: Sensitivity Sweeps Plot Trigger
 if btn_col3.button("Plot Sensitivity Sweeps"):
     st.session_state["active_plot"] = "sensitivity"
 
-# Action 4: Wind Sweep Plot
+# Action 4: Fixed Wind Sweep Plot Trigger
 if btn_col4.button("Plot Fixed-Context Wind Sweep"):
     st.session_state["active_plot"] = "wind"
 
 
 # ==========================================
-# MATPLOTLIB GRAPH OUTPUT DISPLAY
+# MATPLOTLIB GRAPH VISUALIZATION ENGINE
 # ==========================================
 materials_mat = get_current_materials()
 
