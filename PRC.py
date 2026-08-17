@@ -56,9 +56,9 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
     Computes dynamic convective heat transfer coefficient (h_c) using flat-plate 
     boundary layer fluid dynamics and Tsilingiris moist-air transport properties.
     Uses a Logistic Intermittency Transition Factor (gamma) to model the physical 
-    gradual laminar-to-turbulent transition zone.
+    gradual laminar-to-turbulent transition zone around Re_crit = 5e5.
     
-    Includes Characteristic Length (L) for Reynolds and Nusselt scaling.
+    Includes Characteristic Length (L) for scaling the convective boundary layer.
     """
     natural_convection = 2.5
     if wind_speed <= 0.05:
@@ -73,7 +73,7 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
     moist_conductivity = (2.495e-3 * (temp_kelvin**1.5) / (temp_kelvin + 194.4)) * (1.0 + 0.45 * humidity_ratio)
     prandtl_num = ((1005 + 1820 * humidity_ratio) * moist_viscosity) / moist_conductivity
     
-    # Reynolds Number scaled by Characteristic Length L
+    # Reynolds number using specific Characteristic Length
     reynolds_num = (air_density * wind_speed * length) / moist_viscosity
 
     # Pure Laminar Regime Nusselt
@@ -89,7 +89,7 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
 
     forced_nusselt = (1.0 - gamma) * nu_laminar + gamma * nu_turbulent
 
-    # h_c = (Nu * k) / L
+    # Convective Coefficient scaling: h_c = Nu * k / L
     return natural_convection + ((forced_nusselt * moist_conductivity) / length)
 
 
@@ -159,8 +159,7 @@ def load_material_database():
 # ==========================================
 def load_epw_weather(city_name):
     """
-    Parses hourly EnergyPlus Weather (.epw) datasets without artificial rounding.
-    Falls back to a continuous synthetic annual profile if EPW file is missing.
+    Parses hourly EnergyPlus Weather (.epw) datasets.
     """
     base_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(base_dir, "epw_files", city_profiles[city_name]["file"])
@@ -176,7 +175,7 @@ def load_epw_weather(city_name):
         except Exception:
             pass
 
-    # High-precision synthetic annual weather profile fallback
+    # Fallback synthetic weather
     hours = np.arange(8760)
     synthetic_temp = 35.0 + 8.24 * np.sin(2 * np.pi * hours / 24.0)
     synthetic_rh = 50.0 + 20.35 * np.cos(2 * np.pi * hours / 24.0)
