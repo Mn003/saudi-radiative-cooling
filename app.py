@@ -202,26 +202,31 @@ st.markdown('<div class="app-header-title">Saudi Arabia Radiative Cooling Simula
 st.markdown('<div class="app-header-subtitle">Passive Daytime Radiative Cooling (PDRC) Thermal Workstation</div>', unsafe_allow_html=True)
 
 
-# --- SECTION 1: Regional Climate & Geometry Setup ---
+# --- SECTION 1: Regional Climate Setup ---
 st.markdown("""
 <div class="card-container">
-    <div class="section-header">Regional Climate & Surface Geometry</div>
+    <div class="section-header">Regional Climate Setup</div>
 </div>
 """, unsafe_allow_html=True)
 
-f1_col1, f1_col2 = st.columns([1.3, 2.7])
-with f1_col1:
-    current_city = st.selectbox("Select Meteorological Region:", list(city_profiles.keys()), key="city_select")
-with f1_col2:
-    # ADDED: Length Adjustment Slider
-    surface_length = st.slider(
-        "Characteristic Length (L) [m]:", 
-        0.01, 10.0, 1.0, 0.01, 
-        help="Increasing L reduces the convective heat transfer coefficient. Small L (e.g. 0.05m) mimics small lab samples; Large L (e.g. 5m) mimics large roof surfaces."
-    )
+# Select City
+current_city = st.selectbox("Select Meteorological Region:", list(city_profiles.keys()), key="city_select")
 
 city_info = city_profiles[current_city]
-st.markdown(f"<p style='color: #475569; font-size: 12.5px; font-style: italic; margin-top: -10px; margin-bottom: 15px;'>{city_info['specialty']} | Geometry: {surface_length}m characteristic length</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='color: #475569; font-size: 12.5px; font-style: italic; margin-top: -10px; margin-bottom: 15px;'>{city_info['specialty']}</p>", unsafe_allow_html=True)
+
+# THE LENGTH BAR (Moved down and explicitly labeled as requested)
+st.markdown("""
+<div class="card-container">
+    <div class="section-header">Plate Geometry Configuration</div>
+</div>
+""", unsafe_allow_html=True)
+
+surface_length = st.slider(
+    "LENGTH OF THE MATERIAL PLATE (L) [m]:", 
+    0.01, 10.0, 1.0, 0.01, 
+    help="Adjust the characteristic length of the plate. Small L mimics lab samples; Large L mimics building-scale roofs."
+)
 
 weather_df = get_cached_weather(current_city)
 climate_scenarios = {
