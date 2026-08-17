@@ -213,8 +213,12 @@ f1_col1, f1_col2 = st.columns([1.3, 2.7])
 with f1_col1:
     current_city = st.selectbox("Select Meteorological Region:", list(city_profiles.keys()), key="city_select")
 with f1_col2:
-    # ADDED: Surface Characteristic Length Slider
-    surface_length = st.slider("Characteristic Length of Surface (L) [m]:", 0.1, 10.0, 1.0, step=0.1, help="The length of the surface along the wind direction. Smaller surfaces (e.g. 0.1m) experience much higher convective heat transfer coefficients.")
+    # NEW SLIDER: Length Adjustment
+    surface_length = st.slider(
+        "Surface Characteristic Length (L) [m]:", 
+        0.1, 10.0, 1.0, 0.1, 
+        help="Increasing L reduces the average convective heat transfer coefficient. Small L (e.g. 0.1m) simulates small samples; Large L (e.g. 5m) simulates large roof areas."
+    )
 
 city_info = city_profiles[current_city]
 st.markdown(f"<p style='color: #475569; font-size: 12.5px; font-style: italic; margin-top: -10px; margin-bottom: 15px;'>{city_info['specialty']}</p>", unsafe_allow_html=True)
@@ -428,7 +432,7 @@ if btn_col1.button("Run Equilibrium Calculation"):
     if mats:
         rows = []
         for mat in mats:
-            # Passing surface_length to the solver
+            # Using dynamic slider length L
             eq_c = solve_equilibrium_temperature(tair_k, ghi_wm2, wind_ms, rh_pct, mat["eps"], mat["alp"], length=surface_length)
             delta = eq_c - tair_c
             is_cooling = delta < 0
@@ -484,7 +488,7 @@ if st.session_state["active_plot"] and materials_mat:
                 solve_equilibrium_temperature(row[epwDryBulbTempCol] + 273.15, row[epwGhiCol], row[epwWindSpeedCol], row[epwRelHumidityCol], mat["eps"], mat["alp"], length=surface_length)
                 for _, row in day_df.iterrows()
             ]
-            ax1.plot(hours, sim_profile, color=colors[i % 3], linestyle='-', lw=2.2, label=f"{mat['name']}")
+            ax1.plot(hours, sim_profile, color=colors[i % 3], linestyle='-', lw=2.2, label=f"{mat['name']} (ε={mat['eps']}, α={mat['alp']})")
 
         ax1.set_xlabel('Hour of Day', fontweight='bold')
         ax1.set_ylabel('Steady State Temp (°C)', fontweight='bold')
@@ -511,44 +515,47 @@ if st.session_state["active_plot"] and materials_mat:
         twin2.legend(h1 + h2, l1 + l2, loc='upper right', fontsize='x-small')
         ax2.set_title("Active Meteorological Variables", fontsize=10, fontweight='bold')
 
-        fig.suptitle(f"Diurnal Performance Profile - {current_city} (Surface L={surface_length}m)", fontsize=12, fontweight='bold')
+        fig.suptitle(f"Diurnal Performance Profile - {current_city} (L={surface_length}m)", fontsize=12, fontweight='bold')
         fig.tight_layout()
         st.pyplot(fig)
 
     # --- PLOT 2: DUAL-PANEL SENSITIVITY SWEEPS DASHBOARD ---
     elif st.session_state["active_plot"] == "sensitivity":
         st.markdown("#### Parametric Sensitivity Dashboard")
-        st.info(f"• Baseline GHI: {ghi_wm2:.1f} W/m² | • Baseline Air Temp: {tair_c:.2f}°C | • Surface Length: {surface_length}m")
+        st.info(f"• Baseline Solar Irradiance (GHI): {ghi_wm2:.1f} W/m²   |   • Baseline Air Temperature: {tair_c:.2f}°C   |   • Characteristic Length: {surface_length}m")
 
-        ghi_sweep = np.linspace(0.0, 1000.0, 100)
-        wind_sweep = np.linspace(0.1, 12.0, 100)
+        # 200 evaluation points for smooth curves
+        ghi_sweep = np.linspace(0.0, 1000.0, 200)
+        wind_sweep = np.linspace(0.1, 12.0, 200)
         colors = ['#e63946', '#2a9d8f', '#457b9d']
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 5.0), dpi=100)
 
         for i, mat in enumerate(materials_mat):
-            # Sweep Solar Irradiance
+            # Left Subplot: Solar Irradiance Load Sweep (using L)
             ghi_results = [solve_equilibrium_temperature(tair_k, g, wind_ms, rh_pct, mat["eps"], mat["alp"], length=surface_length) for g in ghi_sweep]
             ax1.plot(ghi_sweep, ghi_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
-            # Sweep Wind Speed
+            # Right Subplot: Wind Speed Convection Sweep (using L)
             wind_results = [solve_equilibrium_temperature(tair_k, ghi_wm2, w, rh_pct, mat["eps"], mat["alp"], length=surface_length) for w in wind_sweep]
             ax2.plot(wind_sweep, wind_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
-        ax1.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline")
+        # Format Subplot 1 (GHI)
+        ax1.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.2f}°C)")
         ax1.set_xlabel("Solar Radiation Load (GHI) [W/m²]", fontweight='bold')
         ax1.set_ylabel("Equilibrium Temperature (°C)", fontweight='bold')
-        ax1.set_title("Sensitivity vs. Solar Irradiance Load", fontsize=10, fontweight='bold')
+        ax1.set_title(f"Sensitivity vs. Solar Load (L={surface_length}m)", fontsize=10, fontweight='bold')
         ax1.grid(True, linestyle=':', alpha=0.6)
         ax1.legend(loc='lower left', fontsize='x-small')
 
-        ax2.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline")
+        # Format Subplot 2 (Wind Speed)
+        ax2.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.2f}°C)")
         ax2.set_xlabel("Convective Wind Speed [m/s]", fontweight='bold')
         ax2.set_ylabel("Equilibrium Temperature (°C)", fontweight='bold')
         ax2.set_title(f"Sensitivity vs. Wind Convection (L={surface_length}m)", fontsize=10, fontweight='bold')
         ax2.grid(True, linestyle=':', alpha=0.6)
         ax2.legend(loc='lower left', fontsize='x-small')
 
-        fig.suptitle(f"Parametric Sensitivity Dashboard ({current_city})", fontsize=11, fontweight='bold')
+        fig.suptitle(f"Parametric Sensitivity Dashboard (City: {current_city})", fontsize=11, fontweight='bold')
         fig.tight_layout()
         st.pyplot(fig)
