@@ -54,11 +54,11 @@ def calculate_sky_emissivity(temp_celsius, relative_humidity):
 def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity, length=1.0):
     """
     Computes dynamic convective heat transfer coefficient (h_c) using flat-plate 
-    boundary layer fluid dynamics.
+    boundary layer fluid dynamics and Tsilingiris moist-air transport properties.
+    Uses a Logistic Intermittency Transition Factor (gamma) to model the physical 
+    gradual laminar-to-turbulent transition zone.
     
-    L (Characteristic Length) scaling:
-    - Re = (density * wind * L) / viscosity
-    - h_c = (Nu * conductivity) / L
+    Includes Characteristic Length (L) for Reynolds and Nusselt scaling.
     """
     natural_convection = 2.5
     if wind_speed <= 0.05:
@@ -73,26 +73,30 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
     moist_conductivity = (2.495e-3 * (temp_kelvin**1.5) / (temp_kelvin + 194.4)) * (1.0 + 0.45 * humidity_ratio)
     prandtl_num = ((1005 + 1820 * humidity_ratio) * moist_viscosity) / moist_conductivity
     
-    # Reynolds calculation based on user-defined length
+    # Reynolds Number scaled by Characteristic Length L
     reynolds_num = (air_density * wind_speed * length) / moist_viscosity
 
-    # Nu calculations
+    # Pure Laminar Regime Nusselt
     nu_laminar = 0.664 * (reynolds_num**0.5) * (prandtl_num**(1.0 / 3.0))
+
+    # Mixed Boundary Layer Regime Nusselt
     nu_turbulent = (0.037 * (reynolds_num**0.8) - 871.3) * (prandtl_num**(1.0 / 3.0))
 
+    # Logistic Intermittency Transition Factor (gamma)
     re_crit = 5e5
     delta_re = 1e5
     gamma = 1.0 / (1.0 + np.exp(-(reynolds_num - re_crit) / delta_re))
 
     forced_nusselt = (1.0 - gamma) * nu_laminar + gamma * nu_turbulent
 
-    # Scaling h_c inversely with length L
+    # h_c = (Nu * k) / L
     return natural_convection + ((forced_nusselt * moist_conductivity) / length)
 
 
 def solve_equilibrium_temperature(temp_air_k, ghi_val, wind_speed, rel_hum, emissivity, absorptivity, length=1.0):
     """
-    Solves steady-state PDRC energy balance.
+    Solves steady-state PDRC energy balance: P_rad - P_atm - P_solar + P_conv = 0
+    using MINPACK Powell hybrid Newton-Raphson root solver (scipy.optimize.fsolve).
     """
     temp_air_c = temp_air_k - 273.15
     convective_coef = calculate_convective_coefficient(wind_speed, temp_air_c, rel_hum, length)
@@ -112,6 +116,9 @@ def solve_equilibrium_temperature(temp_air_k, ghi_val, wind_speed, rel_hum, emis
 # MATERIAL DATABASE LOADER
 # ==========================================
 def load_material_database():
+    """
+    Loads all 60+ materials from CSV database or falls back to benchmark presets dictionary.
+    """
     base_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(base_dir, "materials_database.csv")
 
@@ -136,14 +143,25 @@ def load_material_database():
         except Exception:
             pass
 
+    # Benchmark Preset Fallback Dataset
     return [
         {"name": "Purdue BaSO4 Super-White Paint", "chemical": "BaSO4 (Barium Sulfate)", "category": "Paints & Coatings", "alpha": 0.019, "epsilon": 0.950, "spec": "400 µm", "university": "Purdue University", "reference": "Li et al. (ACS Appl. Mater. 2021)"},
+        {"name": "Purdue CaCO3 Radiative Paint", "chemical": "CaCO3 (Calcium Carbonate)", "category": "Paints & Coatings", "alpha": 0.045, "epsilon": 0.955, "spec": "400 µm", "university": "Purdue University", "reference": "Li et al. (Cell Rep. Phys. Sci. 2020)"},
         {"name": "Stanford HfO2/SiO2 Photonic Cooler", "chemical": "HfO2 / SiO2 / Ag", "category": "Metamaterials & Photonic", "alpha": 0.030, "epsilon": 0.960, "spec": "1.8 µm", "university": "Stanford University", "reference": "Raman et al. (Nature 2014)"},
+        {"name": "Columbia Porous P(VdF-HFP) Film", "chemical": "P(VdF-HFP)", "category": "Polymers & Structural Films", "alpha": 0.040, "epsilon": 0.960, "spec": "300 µm", "university": "Columbia University", "reference": "Mandal et al. (Science 2018)"},
+        {"name": "Maryland Delignified Cooling Wood", "chemical": "Cellulose / Wood", "category": "Wood & Bio-Aerogels", "alpha": 0.040, "epsilon": 0.920, "spec": "Engineered", "university": "University of Maryland", "reference": "Li et al. (Science 2019)"},
         {"name": "Standard Commercial TiO2 Paint", "chemical": "TiO2 (Titanium Dioxide)", "category": "Paints & Coatings", "alpha": 0.200, "epsilon": 0.880, "spec": "150 µm", "university": "Commercial Benchmark", "reference": "Commercial Control"}
     ]
 
 
+# ==========================================
+# EPW WEATHER FILE PARSER
+# ==========================================
 def load_epw_weather(city_name):
+    """
+    Parses hourly EnergyPlus Weather (.epw) datasets without artificial rounding.
+    Falls back to a continuous synthetic annual profile if EPW file is missing.
+    """
     base_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(base_dir, "epw_files", city_profiles[city_name]["file"])
 
@@ -158,6 +176,7 @@ def load_epw_weather(city_name):
         except Exception:
             pass
 
+    # High-precision synthetic annual weather profile fallback
     hours = np.arange(8760)
     synthetic_temp = 35.0 + 8.24 * np.sin(2 * np.pi * hours / 24.0)
     synthetic_rh = 50.0 + 20.35 * np.cos(2 * np.pi * hours / 24.0)
