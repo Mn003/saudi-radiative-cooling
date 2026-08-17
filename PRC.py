@@ -51,13 +51,11 @@ def calculate_sky_emissivity(temp_celsius, relative_humidity):
     return float(np.clip(sky_emissivity, 0.70, 0.95))
 
 
-def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity):
+def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity, length=1.0):
     """
     Computes dynamic convective heat transfer coefficient (h_c) using flat-plate 
     boundary layer fluid dynamics and Tsilingiris moist-air transport properties.
-    Uses a Logistic Intermittency Transition Factor (gamma) to model the physical 
-    gradual laminar-to-turbulent transition zone around Re_crit = 5e5, establishing 
-    C^1 derivative continuity and eliminating artificial slope kinks.
+    Incorporates characteristic length (L) into Reynolds and Nusselt calculations.
     """
     natural_convection = 2.5
     if wind_speed <= 0.05:
@@ -71,7 +69,9 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
     moist_viscosity = (1.458e-6 * (temp_kelvin**1.5) / (temp_kelvin + 110.4)) * (1.0 + 0.23 * humidity_ratio)
     moist_conductivity = (2.495e-3 * (temp_kelvin**1.5) / (temp_kelvin + 194.4)) * (1.0 + 0.45 * humidity_ratio)
     prandtl_num = ((1005 + 1820 * humidity_ratio) * moist_viscosity) / moist_conductivity
-    reynolds_num = (air_density * wind_speed * 1.0) / moist_viscosity
+    
+    # Reynolds Number incorporating Characteristic Length (L)
+    reynolds_num = (air_density * wind_speed * length) / moist_viscosity
 
     # Pure Laminar Regime Nusselt
     nu_laminar = 0.664 * (reynolds_num**0.5) * (prandtl_num**(1.0 / 3.0))
@@ -80,23 +80,24 @@ def calculate_convective_coefficient(wind_speed, temp_celsius, relative_humidity
     nu_turbulent = (0.037 * (reynolds_num**0.8) - 871.3) * (prandtl_num**(1.0 / 3.0))
 
     # Logistic Intermittency Transition Factor (gamma)
-    # Models gradual physical boundary-layer transition around Re_crit = 5e5 with width 1e5
     re_crit = 5e5
     delta_re = 1e5
     gamma = 1.0 / (1.0 + np.exp(-(reynolds_num - re_crit) / delta_re))
 
     forced_nusselt = (1.0 - gamma) * nu_laminar + gamma * nu_turbulent
 
-    return natural_convection + ((forced_nusselt * moist_conductivity) / 1.0)
+    # Return h_c = (Nu * k) / L
+    return natural_convection + ((forced_nusselt * moist_conductivity) / length)
 
 
-def solve_equilibrium_temperature(temp_air_k, ghi_val, wind_speed, rel_hum, emissivity, absorptivity):
+def solve_equilibrium_temperature(temp_air_k, ghi_val, wind_speed, rel_hum, emissivity, absorptivity, length=1.0):
     """
     Solves steady-state PDRC energy balance: P_rad - P_atm - P_solar + P_conv = 0
     using MINPACK Powell hybrid Newton-Raphson root solver (scipy.optimize.fsolve).
+    Now includes characteristic length for convection scaling.
     """
     temp_air_c = temp_air_k - 273.15
-    convective_coef = calculate_convective_coefficient(wind_speed, temp_air_c, rel_hum)
+    convective_coef = calculate_convective_coefficient(wind_speed, temp_air_c, rel_hum, length)
     sky_emissivity = calculate_sky_emissivity(temp_air_c, rel_hum)
     stefan_boltzmann_const = 5.67e-8
 
