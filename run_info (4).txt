@@ -1,0 +1,3 @@
+ghi_min=600.0 months=[6, 7, 8] length=0.1 sky=clear materials=materials_verified.csv
+Weather: Climate.OneBuilding TMYx files in epw_files/; station pressure from EPW field 9.
+Model: PRC.solve_equilibrium_temperature (grey body, clear sky, insulated back).

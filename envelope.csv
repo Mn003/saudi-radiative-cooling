@@ -1,0 +1,21 @@
+station,material,n_hours,central,low,high,robust_subambient
+Dhahran,BaSO4-acrylic paint,584,-2.787,-4.271,-0.936,True
+Dhahran,BaSO4 nanoparticle film,584,-2.606,-4.114,-0.857,True
+Dhahran,CaCO3 paint,584,-1.681,-3.169,-0.413,True
+Dhahran,Hierarchically porous P(VdF-HFP) coating,584,-1.972,-3.482,-0.564,True
+Dhahran,Commercial white paint (control),584,1.567,0.013,2.417,False
+Jeddah,BaSO4-acrylic paint,164,-2.658,-4.148,-0.816,True
+Jeddah,BaSO4 nanoparticle film,164,-2.454,-3.983,-0.725,True
+Jeddah,CaCO3 paint,164,-1.426,-2.99,-0.201,True
+Jeddah,Hierarchically porous P(VdF-HFP) coating,164,-1.756,-3.316,-0.366,True
+Jeddah,Commercial white paint (control),164,2.375,0.399,3.454,False
+Al Wajh,BaSO4-acrylic paint,178,-2.186,-3.58,-0.629,True
+Al Wajh,BaSO4 nanoparticle film,178,-2.025,-3.424,-0.556,True
+Al Wajh,CaCO3 paint,178,-1.082,-2.47,-0.097,True
+Al Wajh,Hierarchically porous P(VdF-HFP) coating,178,-1.351,-2.761,-0.237,True
+Al Wajh,Commercial white paint (control),178,2.382,0.431,3.281,False
+Al Baha,BaSO4-acrylic paint,283,-5.757,-8.009,-2.229,True
+Al Baha,BaSO4 nanoparticle film,283,-5.554,-7.864,-2.133,True
+Al Baha,CaCO3 paint,283,-4.38,-6.678,-1.553,True
+Al Baha,Hierarchically porous P(VdF-HFP) coating,283,-4.803,-7.11,-1.78,True
+Al Baha,Commercial white paint (control),283,-0.169,-2.498,0.981,False

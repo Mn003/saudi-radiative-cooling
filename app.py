@@ -17,6 +17,7 @@ from PRC import (
     epwRelHumidityCol,
     epwGhiCol,
     epwWindSpeedCol,
+    epwPressureCol,
     city_profiles,
     calculate_sky_emissivity,
     calculate_convective_coefficient,
@@ -161,35 +162,43 @@ st.markdown("""
 # ==========================================
 @st.cache_data
 def get_cached_materials():
-    return load_material_database()
+    """Verified materials (checked against the original papers) first, then the
+    older literature list, whose values have NOT yet been checked."""
+    verified = load_material_database("materials_verified.csv")
+    for m in verified:
+        m["status"] = "Verified"
+    unverified = load_material_database("materials_database.csv")
+    for m in unverified:
+        m["status"] = "Not yet verified"
+    return verified + unverified
 
 @st.cache_data
 def get_cached_weather(city_name):
     return load_epw_weather(city_name)
 
 materials_db = get_cached_materials()
+n_verified = sum(m["status"] == "Verified" for m in materials_db)
+n_unverified = len(materials_db) - n_verified
 
 
 # ==========================================
 # INITIAL SESSION STATE MANAGEMENT
 # ==========================================
+# Defaults are verified materials (materials_verified.csv), matching the Qalib.
 if "slot_0_name" not in st.session_state:
-    st.session_state["slot_0_name"] = "Standard Commercial TiO2 Paint [TiO2 (Titanium Dioxide)]"
-    st.session_state["slot_0_eps"] = "0.88"
-    st.session_state["slot_0_alp"] = "0.20"
+    st.session_state["slot_0_name"] = "BaSO4-acrylic paint (Li et al. 2021)"
+    st.session_state["slot_0_eps"] = "0.95"
+    st.session_state["slot_0_alp"] = "0.019"
 
 if "slot_1_name" not in st.session_state:
-    st.session_state["slot_1_name"] = "Purdue BaSO4 Super-White Paint [BaSO4 (Barium Sulfate)]"
-    st.session_state["slot_1_eps"] = "0.95"
-    st.session_state["slot_1_alp"] = "0.019"
+    st.session_state["slot_1_name"] = "CaCO3-acrylic paint (Li et al. 2020)"
+    st.session_state["slot_1_eps"] = "0.94"
+    st.session_state["slot_1_alp"] = "0.045"
 
 if "slot_2_name" not in st.session_state:
-    st.session_state["slot_2_name"] = "Stanford HfO2/SiO2 Photonic Cooler [HfO2 / SiO2 / Ag]"
-    st.session_state["slot_2_eps"] = "0.96"
-    st.session_state["slot_2_alp"] = "0.03"
-
-if "results_data" not in st.session_state:
-    st.session_state["results_data"] = None
+    st.session_state["slot_2_name"] = "Commercial white paint, control (Li et al. 2020)"
+    st.session_state["slot_2_eps"] = "0.95"
+    st.session_state["slot_2_alp"] = "0.128"
 
 if "active_plot" not in st.session_state:
     st.session_state["active_plot"] = None
@@ -229,9 +238,10 @@ surface_length = st.slider(
 )
 
 weather_df = get_cached_weather(current_city)
+# Each scenario is ONE hour of the typical-year file; the daily plot shows the day containing it.
 climate_scenarios = {
-    "Absolute Hottest Day": weather_df[epwDryBulbTempCol].idxmax(),
-    "Maximum Solar Peak Day": weather_df[epwGhiCol].idxmax()
+    "Hottest hour of the year": weather_df[epwDryBulbTempCol].idxmax(),
+    "Sunniest hour of the year (highest GHI)": weather_df[epwGhiCol].idxmax()
 }
 
 
@@ -249,15 +259,19 @@ tair_c = float(scenario_row[epwDryBulbTempCol])
 rh_pct = float(scenario_row[epwRelHumidityCol])
 ghi_wm2 = float(scenario_row[epwGhiCol])
 wind_ms = float(scenario_row[epwWindSpeedCol])
+pressure_pa = float(scenario_row[epwPressureCol])  # station pressure from the EPW file
 tair_k = tair_c + 273.15
+month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+hour_label = f"{int(scenario_row[2])} {month_names[int(scenario_row[1]) - 1]}, hour ending {int(scenario_row[3]):02d}:00 (typical year)"
 
 
-# --- SECTION 3: Peak Regional Climate Benchmarks ---
+# --- SECTION 3: Weather at the selected hour ---
 st.markdown("""
 <div class="card-container">
-    <div class="section-header">Peak Climate Benchmarks</div>
+    <div class="section-header">Weather at the Selected Hour</div>
 </div>
 """, unsafe_allow_html=True)
+st.caption(f"{current_city}: {hour_label}. Station pressure {pressure_pa / 1000:.1f} kPa.")
 
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 
@@ -326,10 +340,13 @@ mat2_name = m3_col1.text_input("Name 3", value=st.session_state["slot_2_name"], 
 mat2_eps = m3_col2.text_input("Eps 3", value=st.session_state["slot_2_eps"], label_visibility="collapsed")
 mat2_alp = m3_col3.text_input("Alp 3", value=st.session_state["slot_2_alp"], label_visibility="collapsed")
 
-# 60+ Literature Material Database Popover Dialog
-with st.popover("🔍 Search & Filter 60+ Literature Material Database (University, Chemical, Alpha, Epsilon)", use_container_width=True):
-    st.markdown("<h4 style='color:#0f172a !important;'>Global Radiative Cooling Material Library</h4>", unsafe_allow_html=True)
-    
+# Material library popover (verified entries first)
+with st.popover(f"🔍 Material library: {n_verified} verified entries + {n_unverified} not yet verified", width="stretch"):
+    st.markdown("<h4 style='color:#0f172a !important;'>Radiative Cooling Material Library</h4>", unsafe_allow_html=True)
+    st.caption("'Verified' = alpha and epsilon checked against the original paper (materials_verified.csv). "
+               "'Not yet verified' = values from the earlier literature list; check the source before using them.")
+    show_unverified = st.checkbox("Include entries that are not yet verified", value=False)
+
     p_col1, p_col2 = st.columns(2)
     search_q = p_col1.text_input("Search Name / Chemical Formula:", value="")
     
@@ -343,6 +360,8 @@ with st.popover("🔍 Search & Filter 60+ Literature Material Database (Universi
     # Multi-parametric Filtering
     filtered_mats = []
     for m in materials_db:
+        if m["status"] != "Verified" and not show_unverified:
+            continue
         u_match = (selected_univ == "All Institutions") or (m["university"] == selected_univ)
         t_search = f"{m['name']} {m['chemical']} {m['reference']}".lower()
         t_match = (not search_q) or (search_q.lower() in t_search)
@@ -352,7 +371,7 @@ with st.popover("🔍 Search & Filter 60+ Literature Material Database (Universi
 
     df_display = pd.DataFrame(filtered_mats)
     if not df_display.empty:
-        st.dataframe(df_display[["name", "chemical", "spec", "university", "alpha", "epsilon", "reference"]], use_container_width=True, hide_index=True)
+        st.dataframe(df_display[["status", "name", "chemical", "spec", "university", "alpha", "epsilon", "reference"]], width="stretch", hide_index=True)
         
         st.markdown("<b style='color:#0f172a !important;'>Assign Selected Material to Slot:</b>", unsafe_allow_html=True)
         sel_col1, sel_col2, sel_col3 = st.columns([2, 1, 1])
@@ -362,7 +381,8 @@ with st.popover("🔍 Search & Filter 60+ Literature Material Database (Universi
         if sel_col3.button("Apply Material"):
             match_row = next(m for m in filtered_mats if m["name"] == chosen_mat_name)
             slot_idx = {"Slot 1": "0", "Slot 2": "1", "Slot 3": "2"}[target_slot]
-            st.session_state[f"slot_{slot_idx}_name"] = f"{match_row['name']} [{match_row['chemical']}]"
+            unverified_tag = "" if match_row["status"] == "Verified" else " (NOT YET VERIFIED)"
+            st.session_state[f"slot_{slot_idx}_name"] = f"{match_row['name']} [{match_row['chemical']}]{unverified_tag}"
             st.session_state[f"slot_{slot_idx}_eps"] = str(match_row["epsilon"])
             st.session_state[f"slot_{slot_idx}_alp"] = str(match_row["alpha"])
             st.success(f"Loaded '{chosen_mat_name}' into {target_slot}!")
@@ -376,50 +396,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-if st.session_state["results_data"]:
-    table_html = (
-        '<table style="width:100%; border-collapse: collapse; font-family: sans-serif; font-size: 13.5px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden;">'
-        '<thead>'
-        '<tr style="background-color: #0f172a; color: #ffffff; text-align: left; font-weight: bold;">'
-        '<th style="padding: 10px 14px;">Material Configuration</th>'
-        '<th style="padding: 10px 14px; text-align: center;">Emissivity (ε)</th>'
-        '<th style="padding: 10px 14px; text-align: center;">Absorptivity (α)</th>'
-        '<th style="padding: 10px 14px; text-align: center;">Equilibrium Temp</th>'
-        '<th style="padding: 10px 14px; text-align: center;">Thermal Delta</th>'
-        '<th style="padding: 10px 14px;">Performance Status</th>'
-        '</tr>'
-        '</thead>'
-        '<tbody>'
-    )
-    
-    for idx, row in enumerate(st.session_state["results_data"]):
-        bg_color = "#ffffff" if idx % 2 == 0 else "#f8fafc"
-        badge_style = "background-color: #dcfce7; color: #15803d;" if row["is_cooling"] else "background-color: #fee2e2; color: #b91c1c;"
-        
-        table_html += (
-            f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0; color: #0f172a;">'
-            f'<td style="padding: 10px 14px; font-weight: 600;">{row["name"]}</td>'
-            f'<td style="padding: 10px 14px; text-align: center;">{row["eps"]:.3f}</td>'
-            f'<td style="padding: 10px 14px; text-align: center;">{row["alp"]:.3f}</td>'
-            f'<td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["eq_c"]:.2f} °C</td>'
-            f'<td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["delta"]:+.2f} °C</td>'
-            f'<td style="padding: 10px 14px;"><span style="{badge_style} padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">{row["status"]}</span></td>'
-            f'</tr>'
-        )
-        
-    table_html += '</tbody></table>'
-    st.markdown(table_html, unsafe_allow_html=True)
-else:
-    st.info("Select a city, set up your materials, and click 'Run Equilibrium Calculation' below.")
-
-st.write("")
-
-
-# ==========================================
-# 3-BUTTON ACTION BAR & SIMULATION HANDLERS
-# ==========================================
-btn_col1, btn_col2, btn_col3 = st.columns(3)
-
 def get_current_materials():
     try:
         return [
@@ -431,31 +407,59 @@ def get_current_materials():
         st.error(f"Input Validation Error: Please enter valid numeric values for Emissivity and Absorptivity.\n{err}")
         return None
 
-# Action 1: Calculation
-if btn_col1.button("Run Equilibrium Calculation"):
-    mats = get_current_materials()
-    if mats:
-        rows = []
-        for mat in mats:
-            # Using dynamic length L
-            eq_c = solve_equilibrium_temperature(tair_k, ghi_wm2, wind_ms, rh_pct, mat["eps"], mat["alp"], length=surface_length)
-            delta = eq_c - tair_c
-            is_cooling = delta < 0
-            status_str = f"Sub-ambient Cooling ({delta:+.2f}°C)" if is_cooling else f"Heating Penalty ({delta:+.2f}°C)"
-            
-            rows.append({
-                "name": mat["name"],
-                "eps": mat["eps"],
-                "alp": mat["alp"],
-                "eq_c": eq_c,
-                "delta": delta,
-                "is_cooling": is_cooling,
-                "status": status_str
-            })
-            
-        st.session_state["results_data"] = rows
-        st.session_state["active_plot"] = None
-        st.rerun()
+# The table is recalculated on every change (city, hour, plate length or materials),
+# so it can never show results from a previous selection.
+results_rows = []
+mats_now = get_current_materials()
+if mats_now:
+    for mat in mats_now:
+        eq_c = solve_equilibrium_temperature(tair_k, ghi_wm2, wind_ms, rh_pct, mat["eps"], mat["alp"],
+                                             length=surface_length, pressure_pa=pressure_pa)
+        delta = eq_c - tair_c
+        is_cooling = delta < 0
+        status_str = f"Below air temperature ({delta:+.2f}°C)" if is_cooling else f"Above air temperature ({delta:+.2f}°C)"
+        results_rows.append({"name": mat["name"], "eps": mat["eps"], "alp": mat["alp"], "eq_c": eq_c,
+                             "delta": delta, "is_cooling": is_cooling, "status": status_str})
+
+if results_rows:
+    st.caption(f"{current_city} · {hour_label} · L = {surface_length} m · model prediction (not a measurement)")
+    table_html = (
+        '<table style="width:100%; border-collapse: collapse; font-family: sans-serif; font-size: 13.5px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden;">'
+        '<thead>'
+        '<tr style="background-color: #0f172a; color: #ffffff; text-align: left; font-weight: bold;">'
+        '<th style="padding: 10px 14px;">Material Configuration</th>'
+        '<th style="padding: 10px 14px; text-align: center;">Emissivity (ε)</th>'
+        '<th style="padding: 10px 14px; text-align: center;">Absorptivity (α)</th>'
+        '<th style="padding: 10px 14px; text-align: center;">Equilibrium Temp</th>'
+        '<th style="padding: 10px 14px; text-align: center;">Surface − Air (ΔT)</th>'
+        '<th style="padding: 10px 14px;">Status</th>'
+        '</tr>'
+        '</thead>'
+        '<tbody>'
+    )
+    for idx, row in enumerate(results_rows):
+        bg_color = "#ffffff" if idx % 2 == 0 else "#f8fafc"
+        badge_style = "background-color: #dcfce7; color: #15803d;" if row["is_cooling"] else "background-color: #fee2e2; color: #b91c1c;"
+        table_html += (
+            f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0; color: #0f172a;">'
+            f'<td style="padding: 10px 14px; font-weight: 600;">{row["name"]}</td>'
+            f'<td style="padding: 10px 14px; text-align: center;">{row["eps"]:.3f}</td>'
+            f'<td style="padding: 10px 14px; text-align: center;">{row["alp"]:.3f}</td>'
+            f'<td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["eq_c"]:.2f} °C</td>'
+            f'<td style="padding: 10px 14px; text-align: center; font-weight: 700;">{row["delta"]:+.2f} °C</td>'
+            f'<td style="padding: 10px 14px;"><span style="{badge_style} padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">{row["status"]}</span></td>'
+            f'</tr>'
+        )
+    table_html += '</tbody></table>'
+    st.markdown(table_html, unsafe_allow_html=True)
+
+st.write("")
+
+
+# ==========================================
+# PLOT BUTTONS & HANDLERS
+# ==========================================
+btn_col2, btn_col3 = st.columns(2)
 
 # Action 2: Diurnal Profile Plot Trigger
 if btn_col2.button("Plot Diurnal Performance Profile"):
@@ -476,9 +480,9 @@ if st.session_state["active_plot"] and materials_mat:
     
     # --- PLOT 1: DIURNAL PROFILE ---
     if st.session_state["active_plot"] == "diurnal":
-        st.markdown(f"#### Diurnal Performance Profile - {current_city} (L={surface_length}m)")
+        st.markdown(f"#### Daily profile - {current_city}, day containing {hour_label} (L={surface_length} m)")
         
-        start_idx = (climate_scenarios[current_scenario] // 24) * 24
+        start_idx = (climate_scenarios[current_scenario] // 24) * 24  # the day containing the selected hour
         day_df = weather_df.iloc[start_idx : start_idx + 24]
         hours = np.arange(1, len(day_df) + 1)
         amb_temps = day_df[epwDryBulbTempCol].values
@@ -490,23 +494,23 @@ if st.session_state["active_plot"] and materials_mat:
         
         for i, mat in enumerate(materials_mat):
             sim_profile = [
-                solve_equilibrium_temperature(row[epwDryBulbTempCol] + 273.15, row[epwGhiCol], row[epwWindSpeedCol], row[epwRelHumidityCol], mat["eps"], mat["alp"], length=surface_length)
+                solve_equilibrium_temperature(row[epwDryBulbTempCol] + 273.15, row[epwGhiCol], row[epwWindSpeedCol], row[epwRelHumidityCol], mat["eps"], mat["alp"], length=surface_length, pressure_pa=row[epwPressureCol])
                 for _, row in day_df.iterrows()
             ]
             ax1.plot(hours, sim_profile, color=colors[i % 3], linestyle='-', lw=2.2, label=f"{mat['name']} (ε={mat['eps']}, α={mat['alp']})")
 
-        ax1.set_xlabel('Hour of Day', fontweight='bold')
-        ax1.set_ylabel('Steady State Temp (°C)', fontweight='bold')
-        ax1.set_xticks(hours)
+        ax1.set_xlabel('Hour of day (hour ending)', fontweight='bold')
+        ax1.set_ylabel('Predicted surface temperature (°C)', fontweight='bold')
+        ax1.set_xticks(range(0, 25, 3))
         ax1.grid(True, linestyle=':', alpha=0.6)
         ax1.legend(loc='upper left', fontsize='x-small')
         ax1.set_title("Equilibrium Thermal Response", fontsize=10, fontweight='bold')
 
         ax2.plot(hours, day_df[epwGhiCol].values, color='#f39c12', lw=2.2, label='Solar GHI (W/m²)')
-        ax2.set_xlabel('Hour of Day', fontweight='bold')
+        ax2.set_xlabel('Hour of day (hour ending)', fontweight='bold')
         ax2.set_ylabel('Solar Irradiance (GHI) [W/m²]', color='#f39c12', fontweight='bold')
         ax2.tick_params(axis='y', labelcolor='#f39c12')
-        ax2.set_xticks(hours)
+        ax2.set_xticks(range(0, 25, 3))
         ax2.grid(True, linestyle=':', alpha=0.4)
 
         twin2 = ax2.twinx()
@@ -538,11 +542,11 @@ if st.session_state["active_plot"] and materials_mat:
 
         for i, mat in enumerate(materials_mat):
             # Left Subplot: Solar Load Sweep
-            ghi_results = [solve_equilibrium_temperature(tair_k, g, wind_ms, rh_pct, mat["eps"], mat["alp"], length=surface_length) for g in ghi_sweep]
+            ghi_results = [solve_equilibrium_temperature(tair_k, g, wind_ms, rh_pct, mat["eps"], mat["alp"], length=surface_length, pressure_pa=pressure_pa) for g in ghi_sweep]
             ax1.plot(ghi_sweep, ghi_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
             # Right Subplot: Wind Speed Sweep
-            wind_results = [solve_equilibrium_temperature(tair_k, ghi_wm2, w, rh_pct, mat["eps"], mat["alp"], length=surface_length) for w in wind_sweep]
+            wind_results = [solve_equilibrium_temperature(tair_k, ghi_wm2, w, rh_pct, mat["eps"], mat["alp"], length=surface_length, pressure_pa=pressure_pa) for w in wind_sweep]
             ax2.plot(wind_sweep, wind_results, color=colors[i % 3], linestyle='-', lw=2.2, label=mat["name"])
 
         ax1.axhline(tair_c, color='black', linestyle='--', alpha=0.7, label=f"Ambient Baseline ({tair_c:.2f}°C)")
